@@ -1,5 +1,5 @@
 ;system variables
-;Origin of a ZX81 file is always 16393
+;Origin of a ZX81 file is always 16393 
 
                 ORG 16393
                 

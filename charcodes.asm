@@ -1,7 +1,7 @@
-; ZX81 Characters.
+; ZX81 Characters. 
 __:				EQU	$00	;spacja
 _QT:			EQU	$0B	;"
-_PD:			EQU	$0C	;funt
+_PD:			EQU	$0C	;funt 
 _SD:			EQU	$0D	;$
 _CL:			EQU	$0E	;:
 _QM:			EQU	$0F	;?
