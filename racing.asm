@@ -31,15 +31,17 @@
 #define D_FILE 16396
 ;black block
 #define CAR_CHARACTER_CODE 128  
+;blank space
+#define NOT_CAR_CHARACTER_CODE 0
 ;black grey block
 #define ROAD_CHARACTER_CODE 136
 
 #define GREY_SQAURE 8  
 
 ; keyboard caps to v
-#define KEYBOARD_READ_MEMORY_LOCATION_CAPV 65278
+#define KEYBOARD_READ_MEMORY_LOCATION_CAPV $FE
 ; keyboard space to b
-#define KEYBOARD_READ_MEMORY_LOCATION_SPACEB 32766
+#define KEYBOARD_READ_MEMORY_LOCATION_SPACEB $7F 
 
 	jp main
 
@@ -88,11 +90,10 @@ initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is bete
 	ld (hl),a
 	ld (var_car_pos),hl ;save car posn
 
-	jp gameover; return early for debug
 	
 principalloop
 	ld hl,(var_car_pos) ;retrieve car posn
-	ld a,CAR_CHARACTER_CODE  ;erase car
+	ld a,NOT_CAR_CHARACTER_CODE  ;erase car
 	ld (hl),a
 	ei
 	ld bc,KEYBOARD_READ_MEMORY_LOCATION_CAPV ;read keyboard caps to v
@@ -106,6 +107,7 @@ moveright
 	cp 191
 	jr nz, dontmove
 	dec l
+		;jp gameover; return early for debug
 dontmove
 	di
 	ld (var_car_pos),hl ;store car posn
