@@ -15,7 +15,7 @@
 	jp main
 	
 main
-	org 33000
+	
 	di
 	ld hl, 22537 ;initialise road
 	push hl  ;save road posn
