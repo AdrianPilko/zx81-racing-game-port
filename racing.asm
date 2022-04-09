@@ -60,7 +60,7 @@ main
 	ld de, ROAD_SCREEN_MEM_OFFSET
 	add hl, de	
 	push hl  ;save road posn
-	xor a  ;????
+	xor a  ;???? possibly clears cpu flags?
 	ld a, ROAD_CHARACTER_CODE
 	ld b,ROWS_IN_SCREEN
 	
@@ -73,15 +73,13 @@ initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is bete
 	ld (hl),a				;; make each edge of road 2 characters wide
 	inc hl					
 	ld (hl),a
-	ld de,22 
+	ld de,22  ;; on zx spectrum had ld de,21
 	add hl,de
 	djnz initialiseRoad
 
 	ld b,ROWS_IN_SCREEN
 	ld c,b  ;initialise score
 	push bc  ;save score
-	
-	jp gameover ;return early for debug
 	
 	ld hl,(D_FILE) ;initialise car
 	ld de, CAR_SCREEN_MEM_START_OFFSET
@@ -94,7 +92,7 @@ initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is bete
 	
 principalloop
 	ld hl,(var_car_pos) ;retrieve car posn
-	ld a,GREY_SQAURE  ;erase car
+	ld a,CAR_CHARACTER_CODE  ;erase car
 	ld (hl),a
 	ei
 	ld bc,KEYBOARD_READ_MEMORY_LOCATION_CAPV ;read keyboard caps to v

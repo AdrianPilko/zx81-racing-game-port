@@ -6,7 +6,7 @@ however the colour attribute data (which is what the racing game uses ,starts at
 22528 to 22528+788=23316. zx spectrum has 32columns * 24 rows, zx81 is 32*22rows
 We need to reverse engineer where the positions in screen memory will locate in the port to zx81: 
 
-The car starting position in the zx spectrum code is at 23278 = 22528 + 750,, ie 750 = (32*23)+14 (middle'ish of bottom row 23)
+The car starting position in the zx spectrum code is at 23278 = 22528 + 750, ie 750 = (32*23)+14 (middle'ish of bottom row 23)
 
 car   					= 23278 => offset from D_FILE = (32*21)+14 = 776 (remember this is offset from start of screen memory)
 
