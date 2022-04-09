@@ -131,7 +131,7 @@ gameover
 	pop bc  ;retrieve score
 	pop hl  ;empty stack
 	ei
-	ret; game and tutorial written by Jon Kingsman
+	ret     ; game and tutorial written by Jon Kingsman
 	
 ;include our variables
 #include "vars.asm"
