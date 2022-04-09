@@ -1,0 +1,10 @@
+memory map
+
+road	= 22537 => 16000
+car   					= 23278 => 
+car pos 				= 32900 =>
+read keyboard caps to v	= 65278 =>
+read keyboard space to b= 32766 =>
+scroll road 			= 23263 =>
+scroll road             = 23295 =>
+source of random bytes	= 14000 =>
