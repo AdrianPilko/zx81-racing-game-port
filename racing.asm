@@ -1,4 +1,6 @@
-;; zx81 -fibonacci 
+;;;;;;;;;;;;;;;;;;;;;
+;;; port of a racing game from zx spectrum code by Jon Kingsman by Adrian Pilkington
+;;;;;;;;;;;;;;;;;;;;;
 
 #include "zx81defs.asm" ;; https://www.sinclairzxworld.com/viewtopic.php?t=2186&start=40
 ;EQUs for ROM routines
@@ -15,14 +17,24 @@
 ; problem with zx81 is the screen display D_FILE memory address changes with size of basic program 
 ; see https://www.sinclairzxworld.com/viewtopic.php?t=3919
 ; (the asm here is converted to one line of basic)
-
-#define ROAD_SCREEN_MEM_LOCATION 22537    
-#define CAR_SCREEN_MEM_LOCATION 23278
+#define ROWS_IN_SCREEN 22
+#define COL_IN_SCREEN 32
+#define ROAD_SCREEN_MEM_OFFSET 9    
+#define WIDTH_OF_ROAD 9
+#define CAR_SCREEN_MEM_START_OFFSET 776
 #define ROADFROM_SCREEN_MEM_LOCATION 23263
 #define ROADTO_SCREEN_MEM_LOCATION 23295
 #define RANDOM_BYTES_MEM_LOCATION 14000
+
 ;D_FILE is location of screen memory (which moves depending on length of basic, but should be fixed after program is loaded
+; probably should run some code to detect if this is 1K or 16K as well, or just have 2 verisons 1K and 16K
 #define D_FILE 16396
+;black block
+#define CAR_CHARACTER_CODE 128  
+;black grey block
+#define ROAD_CHARACTER_CODE 136
+
+#define GREY_SQAURE 8  
 
 ; keyboard caps to v
 #define KEYBOARD_READ_MEMORY_LOCATION_CAPV 65278
@@ -30,6 +42,7 @@
 #define KEYBOARD_READ_MEMORY_LOCATION_SPACEB 32766
 
 	jp main
+
 var_car_pos  ; was 32900 in zx spec version
 	DEFB 0,0
 var_road_pos
@@ -40,33 +53,48 @@ var_scroll_road_to
 	DEFB 0,0
 
 main
-	
+	call CLS	
 	di
-	ld hl, ROAD_SCREEN_MEM_LOCATION ;initialise road
+	
+	ld hl,(D_FILE) ;initialise road start memory address
+	ld de, ROAD_SCREEN_MEM_OFFSET
+	add hl, de	
 	push hl  ;save road posn
-	xor a
-	ld b,24
-fillscreen
+	xor a  ;????
+	ld a, ROAD_CHARACTER_CODE
+	ld b,ROWS_IN_SCREEN
+	
+initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is beter name of what it's doing!!
+	ld (hl),a    ;; road starts as two staight vertical lines 
+	inc hl   	 ;; make each edge of road 2 characters wide
+	ld (hl),a   
+	ld de,WIDTH_OF_ROAD   
+	add hl,de			  ;; add offset to get to other side of road
+	ld (hl),a				;; make each edge of road 2 characters wide
+	inc hl					
 	ld (hl),a
-	inc hl
-	ld (hl),a
-	ld de,9
+	ld de,22 
 	add hl,de
-	ld (hl),a
-	inc hl
-	ld (hl),a
-	ld de,21
-	add hl,de
-	djnz fillscreen
+	djnz initialiseRoad
+
+	ld b,ROWS_IN_SCREEN
 	ld c,b  ;initialise score
 	push bc  ;save score
-	ld hl,CAR_SCREEN_MEM_LOCATION ;initialise car
-	ld a,8
+	
+	jp gameover ;return early for debug
+	
+	ld hl,(D_FILE) ;initialise car
+	ld de, CAR_SCREEN_MEM_START_OFFSET
+	add hl, de
+	ld a,CAR_CHARACTER_CODE 
 	ld (hl),a
 	ld (var_car_pos),hl ;save car posn
+
+	jp gameover; return early for debug
+	
 principalloop
 	ld hl,(var_car_pos) ;retrieve car posn
-	ld a,56  ;erase car
+	ld a,GREY_SQAURE  ;erase car
 	ld (hl),a
 	ei
 	ld bc,KEYBOARD_READ_MEMORY_LOCATION_CAPV ;read keyboard caps to v
@@ -89,7 +117,7 @@ dontmove
 	ld a,(hl) ;crash?
 	or a
 	jr z,gameover
-	ld a,8  ;print car
+	ld a,CAR_CHARACTER_CODE  ;print car
 	ld (hl),a
 	ld hl,ROADFROM_SCREEN_MEM_LOCATION ;scroll road
 	ld de,ROADTO_SCREEN_MEM_LOCATION 
@@ -157,6 +185,34 @@ gameover
 	pop hl  ;empty stack
 	ei
 	ret     ; game and tutorial written by Jon Kingsman
+
+fill_screen_with_char    ; adapted from http://swensont.epizy.com/ZX81Assembly.pdf screen1
+	ld hl,(D_FILE) ; Get start of display
+	ld c,22 ; line counter (22 lines)
+loop1
+	inc hl ; get past EOL
+	ld b,32 ; character counter (32 rows)
+loop2 
+	ld (HL),GREY_SQAURE ; print grey square character
+	inc hl ; move to next print position
+	djnz loop2 ; Do it again until B=0
+	dec c ; next line
+	jr nz,loop1
+	ret 
+
+print_to_screen_at    ; adapted from http://swensont.epizy.com/ZX81Assembly.pdf screen1
+	ld hl,(D_FILE) ; Get start of display
+	ld c,22 ; line counter (22 lines)
+Ploop1
+	inc hl ; get past EOL
+	ld b,32 ; character counter (32 rows)
+Ploop2 
+	ld (HL),$08 ; print grey square character
+	inc hl ; move to next print position
+	djnz Ploop2 ; Do it again until B=0
+	dec c ; next line
+	jr nz,Ploop1
+	ret 	
 	
 ;include our variables
 #include "vars.asm"

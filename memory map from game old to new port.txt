@@ -1,8 +1,19 @@
-memory map
+memory map (zx spectrum to zx81 for port of code)
 
-road	= 22537 => 16000
-car   					= 23278 => 
-car pos 				= 32900 =>
+
+(ZX spectrum screen memory always starts at 4000hex = 16384 decimal (6144bytes 192vertical*256horiz pixels),
+however the colour attribute data (which is what the racing game uses ,starts at 5800 hex = 22528 (and is 788bytes)
+22528 to 22528+788=23316. zx spectrum has 32columns * 24 rows, zx81 is 32*22rows
+We need to reverse engineer where the positions in screen memory will locate in the port to zx81: 
+
+The car starting position in the zx spectrum code is at 23278 = 22528 + 750,, ie 750 = (32*23)+14 (middle'ish of bottom row 23)
+
+car   					= 23278 => offset from D_FILE = (32*21)+14 = 776 (remember this is offset from start of screen memory)
+
+car pos 				= 32900 => this is just variable to store
+
+road	                = 22537 => offset at start is 22537 - 22528 = 9 = top row nearer left
+
 read keyboard caps to v	= 65278 =>
 read keyboard space to b= 32766 =>
 scroll road 			= 23263 =>

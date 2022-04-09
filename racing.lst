@@ -1,14 +1,16 @@
-0001   0000             ;; zx81 -fibonacci 
-0002   0000             
-0003   0000             #include "zx81defs.asm" ;; https://www.sinclairzxworld.com/viewtopic.php?t=2186&start=40
+0001   0000             ;;;;;;;;;;;;;;;;;;;;;
+0002   0000             ;;; port of a racing game from zx spectrum code by Jon Kingsman by Adrian Pilkington
+0003   0000             ;;;;;;;;;;;;;;;;;;;;;
+0004   0000             
+0005   0000             #include "zx81defs.asm" ;; https://www.sinclairzxworld.com/viewtopic.php?t=2186&start=40
 0001+  0000             ;defines to make us feel more at home
 0002+  0000             #define         DEFB .BYTE 
 0003+  0000             #define         DEFW .WORD
 0004+  0000             #define         DEFM .TEXT
 0005+  0000             #define         ORG  .ORG
 0006+  0000             #define         EQU  .EQU
-0004   0000             ;EQUs for ROM routines
-0005   0000             #include "zx81rom.asm"
+0006   0000             ;EQUs for ROM routines
+0007   0000             #include "zx81rom.asm"
 0001+  0000             ;ZX81 ROM routines 
 0002+  0000             PRINT			EQU $10
 0003+  0000             PRINTAT			EQU $08F5
@@ -28,8 +30,8 @@
 0017+  0000             PAUSE			EQU $0F32
 0018+  0000             SCROLL 			EQU $0C0E
 0019+  0000             ;sys vars
-0020+  0000             ERR_NR			EQU $40000006   0000             ;ZX81 char codes/how to survive without ASCII
-0007   0000             #include "charcodes.asm"
+0020+  0000             ERR_NR			EQU $40000008   0000             ;ZX81 char codes/how to survive without ASCII
+0009   0000             #include "charcodes.asm"
 0001+  0000             ; ZX81 Characters. 
 0002+  0000             __:				EQU	$00	;spacja
 0003+  0000             _QT:			EQU	$0B	;"
@@ -87,8 +89,8 @@
 0055+  0000             _X				EQU $3D
 0056+  0000             _Y				EQU $3E
 0057+  0000             _Z				EQU $3F
-0008   0000             ;system variables
-0009   0000             #include "zx81sys.asm"
+0010   0000             ;system variables
+0011   0000             #include "zx81sys.asm"
 0001+  0000             ;system variables
 0002+  0000             ;Origin of a ZX81 file is always 16393 
 0003+  0000             
@@ -97,15 +99,15 @@
 0006+  4009             ; System variables live here
 0007+  4009 00          VERSN:          DEFB 0
 0008+  400A 02 00       E_PPC:          DEFW 2
-0009+  400C 44 41       D_FILE:         DEFW Display
-0010+  400E 45 41       DF_CC:          DEFW Display+1                  ; First character of display
-0011+  4010 5D 44       VARS:           DEFW Variables
+0009+  400C 7B 41       D_FILE:         DEFW Display
+0010+  400E 7C 41       DF_CC:          DEFW Display+1                  ; First character of display
+0011+  4010 94 44       VARS:           DEFW Variables
 0012+  4012 00 00       DEST:           DEFW 0
-0013+  4014 5E 44       E_LINE:         DEFW BasicEnd 
-0014+  4016 62 44       CH_ADD:         DEFW BasicEnd+4                 ; Simulate SAVE "X"
+0013+  4014 95 44       E_LINE:         DEFW BasicEnd 
+0014+  4016 99 44       CH_ADD:         DEFW BasicEnd+4                 ; Simulate SAVE "X"
 0015+  4018 00 00       X_PTR:          DEFW 0
-0016+  401A 63 44       STKBOT:         DEFW BasicEnd+5
-0017+  401C 63 44       STKEND:         DEFW BasicEnd+5                 ; Empty stack
+0016+  401A 9A 44       STKBOT:         DEFW BasicEnd+5
+0017+  401C 9A 44       STKEND:         DEFW BasicEnd+5                 ; Empty stack
 0018+  401E 00          BREG:           DEFB 0
 0019+  401F 5D 40       MEM:            DEFW MEMBOT
 0020+  4021 00          UNUSED1:        DEFB 0
@@ -114,7 +116,7 @@
 0023+  4025 BF FD       LAST_K:         DEFW $fdbf
 0024+  4027 0F          DEBOUN:         DEFB 15
 0025+  4028 37          MARGIN:         DEFB 55
-0026+  4029 32 41       NXTLIN:         DEFW Line2                      ; Next line address
+0026+  4029 69 41       NXTLIN:         DEFW Line2                      ; Next line address
 0027+  402B 00 00       OLDPPC:         DEFW 0
 0028+  402D 00          FLAGX:          DEFB 0
 0029+  402E 00 00       STRLEN:         DEFW 0
@@ -146,419 +148,473 @@
 0040+  407D             
 0041+  407D             ; End of system variables
 0042+  407D             
-0010   407D             
-0011   407D             ;the standard REM statement that will contain our 'hex' code
-0012   407D             #include "line1.asm"
+0012   407D             
+0013   407D             ;the standard REM statement that will contain our 'hex' code
+0014   407D             #include "line1.asm"
 0001+  407D             ;Line 1 
 0002+  407D             ;this is the REM statement...
 0003+  407D 00 00       Line1:          DEFB $00,$00                    ; Line 1
-0004+  407F B1 00                       DEFW Line1End-Line1Text         ; Line 1 length
+0004+  407F E8 00                       DEFW Line1End-Line1Text         ; Line 1 length
 0005+  4081 EA          Line1Text:      DEFB $ea                        ; REM             
 0006+  4082             
-0013   4082             
-0014   4082             ; these variables need converting to screen addresses for zx81
-0015   4082             ; problem with zx81 is the screen display D_FILE memory address changes with size of basic program 
-0016   4082             ; see https://www.sinclairzxworld.com/viewtopic.php?t=3919
-0017   4082             ; (the asm here is converted to one line of basic)
-0018   4082             
-0019   4082             #define ROAD_SCREEN_MEM_LOCATION 22537    
-0020   4082             #define CAR_SCREEN_MEM_LOCATION 23278
-0021   4082             #define ROADFROM_SCREEN_MEM_LOCATION 23263
-0022   4082             #define ROADTO_SCREEN_MEM_LOCATION 23295
-0023   4082             #define RANDOM_BYTES_MEM_LOCATION 14000
-0024   4082             ;D_FILE is location of screen memory (which moves depending on length of basic, but should be fixed after program is loaded
-0025   4082             #define D_FILE 16396
-0026   4082             
-0027   4082             ; keyboard caps to v
-0028   4082             #define KEYBOARD_READ_MEMORY_LOCATION_CAPV 65278
-0029   4082             ; keyboard space to b
-0030   4082             #define KEYBOARD_READ_MEMORY_LOCATION_SPACEB 32766
-0031   4082             
-0032   4082 C3 8D 40    	jp main
-0033   4085             var_car_pos  ; was 32900 in zx spec version
-0034   4085 00 00       	DEFB 0,0
-0035   4087             var_road_pos
-0036   4087 00 00       	DEFB 0,0
-0037   4089             var_scroll_road_from
-0038   4089 00 00       	DEFB 0,0
-0039   408B             var_scroll_road_to
-0040   408B 00 00       	DEFB 0,0
-0041   408D             
-0042   408D             main
-0043   408D             	
-0044   408D F3          	di
-0045   408E 21 09 58    	ld hl, ROAD_SCREEN_MEM_LOCATION ;initialise road
-0046   4091 E5          	push hl  ;save road posn
-0047   4092 AF          	xor a
-0048   4093 06 18       	ld b,24
-0049   4095             fillscreen
-0050   4095 77          	ld (hl),a
-0051   4096 23          	inc hl
-0052   4097 77          	ld (hl),a
-0053   4098 11 09 00    	ld de,9
-0054   409B 19          	add hl,de
-0055   409C 77          	ld (hl),a
-0056   409D 23          	inc hl
-0057   409E 77          	ld (hl),a
-0058   409F 11 15 00    	ld de,21
-0059   40A2 19          	add hl,de
-0060   40A3 10 F0       	djnz fillscreen
-0061   40A5 48          	ld c,b  ;initialise score
-0062   40A6 C5          	push bc  ;save score
-0063   40A7 21 EE 5A    	ld hl,CAR_SCREEN_MEM_LOCATION ;initialise car
-0064   40AA 3E 08       	ld a,8
-0065   40AC 77          	ld (hl),a
-0066   40AD 22 85 40    	ld (var_car_pos),hl ;save car posn
-0067   40B0             principalloop
-0068   40B0 2A 85 40    	ld hl,(var_car_pos) ;retrieve car posn
-0069   40B3 3E 38       	ld a,56  ;erase car
-0070   40B5 77          	ld (hl),a
-0071   40B6 FB          	ei
-0072   40B7 01 FE FE    	ld bc,KEYBOARD_READ_MEMORY_LOCATION_CAPV ;read keyboard caps to v
-0073   40BA ED 78       	in a,(c)
-0074   40BC FE BF       	cp 191
-0075   40BE 20 01       	jr nz, moveright
-0076   40C0 2C          	inc l
-0077   40C1             moveright
-0078   40C1 01 FE 7F    	ld bc,KEYBOARD_READ_MEMORY_LOCATION_SPACEB ;read keyboard space to b
-0079   40C4 ED 78       	in a,(c)
-0080   40C6 FE BF       	cp 191
-0081   40C8 20 01       	jr nz, dontmove
-0082   40CA 2D          	dec l
-0083   40CB             dontmove
-0084   40CB F3          	di
-0085   40CC 22 85 40    	ld (var_car_pos),hl ;store car posn
-0086   40CF 11 20 00    	ld de, 32 ;new carposn
-0087   40D2 AF          	xor a  ;set carry flag to 0
-0088   40D3 ED 52       	sbc hl,de
-0089   40D5 7E          	ld a,(hl) ;crash?
-0090   40D6 B7          	or a
-0091   40D7 28 54       	jr z,gameover
-0092   40D9 3E 08       	ld a,8  ;print car
-0093   40DB 77          	ld (hl),a
-0094   40DC 21 DF 5A    	ld hl,ROADFROM_SCREEN_MEM_LOCATION ;scroll road
-0095   40DF 11 FF 5A    	ld de,ROADTO_SCREEN_MEM_LOCATION 
-0096   40E2 01 E0 02    	ld bc,736
-0097   40E5 ED B8       	lddr
-0098   40E7 C1          	pop bc  ;retrieve score
-0099   40E8 E1          	pop hl  ;retrieve road posn
-0100   40E9 E5          	push hl  ;save road posn
-0101   40EA 3E 38       	ld a,56  ;delete old road
-0102   40EC 77          	ld (hl),a
-0103   40ED 23          	inc hl
-0104   40EE 77          	ld (hl),a
-0105   40EF 11 09 00    	ld de,9
-0106   40F2 19          	add hl,de
-0107   40F3 77          	ld (hl),a
-0108   40F4 23          	inc hl
-0109   40F5 77          	ld (hl),a
-0110   40F6             	;random road left or right
-0111   40F6 21 B0 36    	ld hl,RANDOM_BYTES_MEM_LOCATION ;source of random bytes in ROM
-0112   40F9 16 00       	ld d,0
-0113   40FB 59          	ld e,c
-0114   40FC 19          	add hl, de
-0115   40FD 7E          	ld a,(hl)
-0116   40FE E1          	pop hl  ;retrieve road posn
-0117   40FF 2B          	dec hl  ;move road posn 1 left
-0118   4100 E6 01       	and 1
-0119   4102 28 02       	jr z, roadleft
-0120   4104 23          	inc hl
-0121   4105 23          	inc hl
-0122   4106             roadleft
-0123   4106 7D          	ld a,l  ;check left
-0124   4107 FE FF       	cp 255
-0125   4109 20 02       	jr nz, checkright
-0126   410B 23          	inc hl
-0127   410C 23          	inc hl
-0128   410D             checkright
-0129   410D 7D          	ld a,l
-0130   410E FE 15       	cp 21
-0131   4110 20 02       	jr nz, newroadposn
-0132   4112 2B          	dec hl
-0133   4113 2B          	dec hl
-0134   4114             newroadposn
-0135   4114 E5          	push hl  ;save road posn
-0136   4115 AF          	xor a  ;print new road
-0137   4116 77          	ld (hl),a
-0138   4117 23          	inc hl
-0139   4118 77          	ld (hl),a
-0140   4119 11 09 00    	ld de,9
-0141   411C 19          	add hl,de
-0142   411D 77          	ld (hl),a
-0143   411E 23          	inc hl
-0144   411F 77          	ld (hl),a
-0145   4120 03          	inc bc  ;add 1 to score
-0146   4121 C5          	push bc  ;save score
-0147   4122             	;wait routine
-0148   4122 01 FF 1F    	ld bc,$1fff ;max waiting time
-0149   4125             wait
-0150   4125 0B          	dec bc
-0151   4126 78          	ld a,b
-0152   4127 B1          	or c
-0153   4128 20 FB       	jr nz, wait
-0154   412A C3 B0 40    	jp principalloop
-0155   412D             gameover
-0156   412D C1          	pop bc  ;retrieve score
-0157   412E E1          	pop hl  ;empty stack
-0158   412F FB          	ei
-0159   4130 C9          	ret     ; game and tutorial written by Jon Kingsman
-0160   4131             	
-0161   4131             ;include our variables
-0162   4131             #include "vars.asm"
-0001+  4131             ;our variables 
-0002+  4131             
-0163   4131             
-0164   4131             ; ===========================================================
-0165   4131             ; code ends
-0166   4131             ; ===========================================================
-0167   4131             ;end the REM line and put in the RAND USR line to call our 'hex code'
-0168   4131             #include "line2.asm"
-0001+  4131             ;this is the end of line 1 - the REM	 		
-0002+  4131 76          				DEFB $76                        ; Newline				
-0003+  4132             ;followed by the the RAND USR line				
-0004+  4132             Line1End       
-0005+  4132 00 0A       Line2			DEFB $00,$0a
-0006+  4134 0E 00                       DEFW Line2End-Line2Text
-0007+  4136 F9 D4       Line2Text     	DEFB $F9,$D4                    ; RAND USR
-0008+  4138 1D 22 21 1D 				DEFB $1D,$22,$21,$1D,$20        ; 16514                
-0008+  413C 20 
-0009+  413D 7E                          DEFB $7E                        ; Number
-0010+  413E 8F 01 04 00                 DEFB $8F,$01,$04,$00,$00        ; Numeric encoding
-0010+  4142 00 
-0011+  4143 76                          DEFB $76                        ; Newline
-0012+  4144             Line2End 
-0169   4144             
-0170   4144             ;display file defintion
-0171   4144             #include "screen.asm"               
-0001+  4144             ;ZX81 screens
-0002+  4144             ; Display file (ZX81 screen) - low res screen 
-0003+  4144 76          Display        	DEFB $76     
-0004+  4145 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 0
-0004+  4149 00 00 00 00 
-0004+  414D 00 00 00 00 
-0004+  4151 00 00 00 00 
-0004+  4155 00 00 00 00 
-0004+  4159 00 00 00 00 
-0004+  415D 00 00 00 00 
-0004+  4161 00 00 00 00 
-0004+  4165 76 
-0005+  4166 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 1
-0005+  416A 00 00 00 00 
-0005+  416E 00 00 00 00 
-0005+  4172 00 00 00 00 
-0005+  4176 00 00 00 00 
-0005+  417A 00 00 00 00 
-0005+  417E 00 00 00 00 
-0005+  4182 00 00 00 00 
-0005+  4186 76 
-0006+  4187 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 2
-0006+  418B 00 00 00 00 
-0006+  418F 00 00 00 00 
-0006+  4193 00 00 00 00 
-0006+  4197 00 00 00 00 
-0006+  419B 00 00 00 00 
-0006+  419F 00 00 00 00 
-0006+  41A3 00 00 00 00 
-0006+  41A7 76 
-0007+  41A8 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 3
-0007+  41AC 00 00 00 00 
-0007+  41B0 00 00 00 00 
-0007+  41B4 00 00 00 00 
-0007+  41B8 00 00 00 00 
-0007+  41BC 00 00 00 00 
-0007+  41C0 00 00 00 00 
-0007+  41C4 00 00 00 00 
-0007+  41C8 76 
-0008+  41C9 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 4
-0008+  41CD 00 00 00 00 
-0008+  41D1 00 00 00 00 
-0008+  41D5 00 00 00 00 
-0008+  41D9 00 00 00 00 
-0008+  41DD 00 00 00 00 
-0008+  41E1 00 00 00 00 
-0008+  41E5 00 00 00 00 
-0008+  41E9 76 
-0009+  41EA 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 5
-0009+  41EE 00 00 00 00 
-0009+  41F2 00 00 00 00 
-0009+  41F6 00 00 00 00 
-0009+  41FA 00 00 00 00 
-0009+  41FE 00 00 00 00 
-0009+  4202 00 00 00 00 
-0009+  4206 00 00 00 00 
-0009+  420A 76 
-0010+  420B 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 6
-0010+  420F 00 00 00 00 
-0010+  4213 00 00 00 00 
-0010+  4217 00 00 00 00 
-0010+  421B 00 00 00 00 
-0010+  421F 00 00 00 00 
-0010+  4223 00 00 00 00 
-0010+  4227 00 00 00 00 
-0010+  422B 76 
-0011+  422C 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 7
-0011+  4230 00 00 00 00 
-0011+  4234 00 00 00 00 
-0011+  4238 00 00 00 00 
-0011+  423C 00 00 00 00 
-0011+  4240 00 00 00 00 
-0011+  4244 00 00 00 00 
-0011+  4248 00 00 00 00 
-0011+  424C 76 
-0012+  424D 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 8
-0012+  4251 00 00 00 00 
-0012+  4255 00 00 00 00 
-0012+  4259 00 00 00 00 
-0012+  425D 00 00 00 00 
-0012+  4261 00 00 00 00 
-0012+  4265 00 00 00 00 
-0012+  4269 00 00 00 00 
-0012+  426D 76 
-0013+  426E 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 9
-0013+  4272 00 00 00 00 
-0013+  4276 00 00 00 00 
-0013+  427A 00 00 00 00 
-0013+  427E 00 00 00 00 
-0013+  4282 00 00 00 00 
-0013+  4286 00 00 00 00 
-0013+  428A 00 00 00 00 
-0013+  428E 76 
-0014+  428F 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 10
-0014+  4293 00 00 00 00 
-0014+  4297 00 00 00 00 
-0014+  429B 00 00 00 00 
-0014+  429F 00 00 00 00 
-0014+  42A3 00 00 00 00 
-0014+  42A7 00 00 00 00 
-0014+  42AB 00 00 00 00 
-0014+  42AF 76 
-0015+  42B0 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 11
-0015+  42B4 00 00 00 00 
-0015+  42B8 00 00 00 00 
-0015+  42BC 00 00 00 00 
-0015+  42C0 00 00 00 00 
-0015+  42C4 00 00 00 00 
-0015+  42C8 00 00 00 00 
-0015+  42CC 00 00 00 00 
-0015+  42D0 76 
-0016+  42D1 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 12
-0016+  42D5 00 00 00 00 
-0016+  42D9 00 00 00 00 
-0016+  42DD 00 00 00 00 
-0016+  42E1 00 00 00 00 
-0016+  42E5 00 00 00 00 
-0016+  42E9 00 00 00 00 
-0016+  42ED 00 00 00 00 
-0016+  42F1 76 
-0017+  42F2 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 13
-0017+  42F6 00 00 00 00 
-0017+  42FA 00 00 00 00 
-0017+  42FE 00 00 00 00 
-0017+  4302 00 00 00 00 
-0017+  4306 00 00 00 00 
-0017+  430A 00 00 00 00 
-0017+  430E 00 00 00 00 
-0017+  4312 76 
-0018+  4313 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 14
-0018+  4317 00 00 00 00 
-0018+  431B 00 00 00 00 
-0018+  431F 00 00 00 00 
-0018+  4323 00 00 00 00 
-0018+  4327 00 00 00 00 
-0018+  432B 00 00 00 00 
-0018+  432F 00 00 00 00 
-0018+  4333 76 
-0019+  4334 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 15
-0019+  4338 00 00 00 00 
-0019+  433C 00 00 00 00 
-0019+  4340 00 00 00 00 
-0019+  4344 00 00 00 00 
-0019+  4348 00 00 00 00 
-0019+  434C 00 00 00 00 
-0019+  4350 00 00 00 00 
-0019+  4354 76 
-0020+  4355 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 16
-0020+  4359 00 00 00 00 
-0020+  435D 00 00 00 00 
-0020+  4361 00 00 00 00 
-0020+  4365 00 00 00 00 
-0020+  4369 00 00 00 00 
-0020+  436D 00 00 00 00 
-0020+  4371 00 00 00 00 
-0020+  4375 76 
-0021+  4376 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 17
-0021+  437A 00 00 00 00 
-0021+  437E 00 00 00 00 
-0021+  4382 00 00 00 00 
-0021+  4386 00 00 00 00 
-0021+  438A 00 00 00 00 
-0021+  438E 00 00 00 00 
-0021+  4392 00 00 00 00 
-0021+  4396 76 
-0022+  4397 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 18
-0022+  439B 00 00 00 00 
-0022+  439F 00 00 00 00 
-0022+  43A3 00 00 00 00 
-0022+  43A7 00 00 00 00 
-0022+  43AB 00 00 00 00 
-0022+  43AF 00 00 00 00 
-0022+  43B3 00 00 00 00 
-0022+  43B7 76 
-0023+  43B8 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 19
-0023+  43BC 00 00 00 00 
-0023+  43C0 00 00 00 00 
-0023+  43C4 00 00 00 00 
-0023+  43C8 00 00 00 00 
-0023+  43CC 00 00 00 00 
-0023+  43D0 00 00 00 00 
-0023+  43D4 00 00 00 00 
-0023+  43D8 76 
-0024+  43D9 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 20
-0024+  43DD 00 00 00 00 
-0024+  43E1 00 00 00 00 
-0024+  43E5 00 00 00 00 
-0024+  43E9 00 00 00 00 
-0024+  43ED 00 00 00 00 
-0024+  43F1 00 00 00 00 
-0024+  43F5 00 00 00 00 
-0024+  43F9 76 
-0025+  43FA 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 21
-0025+  43FE 00 00 00 00 
-0025+  4402 00 00 00 00 
-0025+  4406 00 00 00 00 
-0025+  440A 00 00 00 00 
-0025+  440E 00 00 00 00 
-0025+  4412 00 00 00 00 
-0025+  4416 00 00 00 00 
-0025+  441A 76 
-0026+  441B 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 22
-0026+  441F 00 00 00 00 
-0026+  4423 00 00 00 00 
-0026+  4427 00 00 00 00 
-0026+  442B 00 00 00 00 
-0026+  442F 00 00 00 00 
-0026+  4433 00 00 00 00 
-0026+  4437 00 00 00 00 
-0026+  443B 76 
-0027+  443C 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 23
-0027+  4440 00 00 00 00 
-0027+  4444 00 00 00 00 
-0027+  4448 00 00 00 00 
-0027+  444C 00 00 00 00 
-0027+  4450 00 00 00 00 
-0027+  4454 00 00 00 00 
-0027+  4458 00 00 00 00 
-0027+  445C 76 
-0028+  445D             
-0172   445D             
-0173   445D             ;close out the basic program
-0174   445D             #include "endbasic.asm"
-0001+  445D             ; close out the BASIC program structure
-0002+  445D             ; BASIC Variables area 
-0003+  445D             Variables:      
-0004+  445D 80          VariablesEnd:   DEFB $80
-0005+  445E             BasicEnd:                              
-0006+  445E             
-0007+  445E             
-0008+  445E             #END
+0015   4082             
+0016   4082             ; these variables need converting to screen addresses for zx81
+0017   4082             ; problem with zx81 is the screen display D_FILE memory address changes with size of basic program 
+0018   4082             ; see https://www.sinclairzxworld.com/viewtopic.php?t=3919
+0019   4082             ; (the asm here is converted to one line of basic)
+0020   4082             #define ROWS_IN_SCREEN 22
+0021   4082             #define COL_IN_SCREEN 32
+0022   4082             #define ROAD_SCREEN_MEM_OFFSET 9    
+0023   4082             #define WIDTH_OF_ROAD 9
+0024   4082             #define CAR_SCREEN_MEM_START_OFFSET 776
+0025   4082             #define ROADFROM_SCREEN_MEM_LOCATION 23263
+0026   4082             #define ROADTO_SCREEN_MEM_LOCATION 23295
+0027   4082             #define RANDOM_BYTES_MEM_LOCATION 14000
+0028   4082             
+0029   4082             ;D_FILE is location of screen memory (which moves depending on length of basic, but should be fixed after program is loaded
+0030   4082             ; probably should run some code to detect if this is 1K or 16K as well, or just have 2 verisons 1K and 16K
+0031   4082             #define D_FILE 16396
+0032   4082             ;black block
+0033   4082             #define CAR_CHARACTER_CODE 128  
+0034   4082             ;black grey block
+0035   4082             #define ROAD_CHARACTER_CODE 136
+0036   4082             
+0037   4082             #define GREY_SQAURE 8  
+0038   4082             
+0039   4082             ; keyboard caps to v
+0040   4082             #define KEYBOARD_READ_MEMORY_LOCATION_CAPV 65278
+0041   4082             ; keyboard space to b
+0042   4082             #define KEYBOARD_READ_MEMORY_LOCATION_SPACEB 32766
+0043   4082             
+0044   4082 C3 8D 40    	jp main
+0045   4085             
+0046   4085             var_car_pos  ; was 32900 in zx spec version
+0047   4085 00 00       	DEFB 0,0
+0048   4087             var_road_pos
+0049   4087 00 00       	DEFB 0,0
+0050   4089             var_scroll_road_from
+0051   4089 00 00       	DEFB 0,0
+0052   408B             var_scroll_road_to
+0053   408B 00 00       	DEFB 0,0
+0054   408D             
+0055   408D             main
+0056   408D CD 2A 0A    	call CLS	
+0057   4090 F3          	di
+0058   4091             	
+0059   4091 2A 0C 40    	ld hl,(D_FILE) ;initialise road start memory address
+0060   4094 11 09 00    	ld de, ROAD_SCREEN_MEM_OFFSET
+0061   4097 19          	add hl, de	
+0062   4098 E5          	push hl  ;save road posn
+0063   4099 AF          	xor a  ;????
+0064   409A 3E 88       	ld a, ROAD_CHARACTER_CODE
+0065   409C 06 16       	ld b,ROWS_IN_SCREEN
+0066   409E             	
+0067   409E             initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is beter name of what it's doing!!
+0068   409E 77          	ld (hl),a    ;; road starts as two staight vertical lines 
+0069   409F 23          	inc hl   	 ;; make each edge of road 2 characters wide
+0070   40A0 77          	ld (hl),a   
+0071   40A1 11 09 00    	ld de,WIDTH_OF_ROAD   
+0072   40A4 19          	add hl,de			  ;; add offset to get to other side of road
+0073   40A5 77          	ld (hl),a				;; make each edge of road 2 characters wide
+0074   40A6 23          	inc hl					
+0075   40A7 77          	ld (hl),a
+0076   40A8 11 16 00    	ld de,22 
+0077   40AB 19          	add hl,de
+0078   40AC 10 F0       	djnz initialiseRoad
+0079   40AE             
+0080   40AE 06 16       	ld b,ROWS_IN_SCREEN
+0081   40B0 48          	ld c,b  ;initialise score
+0082   40B1 C5          	push bc  ;save score
+0083   40B2             	
+0084   40B2 C3 42 41    	jp gameover ;return early for debug
+0085   40B5             	
+0086   40B5 2A 0C 40    	ld hl,(D_FILE) ;initialise car
+0087   40B8 11 08 03    	ld de, CAR_SCREEN_MEM_START_OFFSET
+0088   40BB 19          	add hl, de
+0089   40BC 3E 80       	ld a,CAR_CHARACTER_CODE 
+0090   40BE 77          	ld (hl),a
+0091   40BF 22 85 40    	ld (var_car_pos),hl ;save car posn
+0092   40C2             
+0093   40C2 C3 42 41    	jp gameover; return early for debug
+0094   40C5             	
+0095   40C5             principalloop
+0096   40C5 2A 85 40    	ld hl,(var_car_pos) ;retrieve car posn
+0097   40C8 3E 08       	ld a,GREY_SQAURE  ;erase car
+0098   40CA 77          	ld (hl),a
+0099   40CB FB          	ei
+0100   40CC 01 FE FE    	ld bc,KEYBOARD_READ_MEMORY_LOCATION_CAPV ;read keyboard caps to v
+0101   40CF ED 78       	in a,(c)
+0102   40D1 FE BF       	cp 191
+0103   40D3 20 01       	jr nz, moveright
+0104   40D5 2C          	inc l
+0105   40D6             moveright
+0106   40D6 01 FE 7F    	ld bc,KEYBOARD_READ_MEMORY_LOCATION_SPACEB ;read keyboard space to b
+0107   40D9 ED 78       	in a,(c)
+0108   40DB FE BF       	cp 191
+0109   40DD 20 01       	jr nz, dontmove
+0110   40DF 2D          	dec l
+0111   40E0             dontmove
+0112   40E0 F3          	di
+0113   40E1 22 85 40    	ld (var_car_pos),hl ;store car posn
+0114   40E4 11 20 00    	ld de, 32 ;new carposn
+0115   40E7 AF          	xor a  ;set carry flag to 0
+0116   40E8 ED 52       	sbc hl,de
+0117   40EA 7E          	ld a,(hl) ;crash?
+0118   40EB B7          	or a
+0119   40EC 28 54       	jr z,gameover
+0120   40EE 3E 80       	ld a,CAR_CHARACTER_CODE  ;print car
+0121   40F0 77          	ld (hl),a
+0122   40F1 21 DF 5A    	ld hl,ROADFROM_SCREEN_MEM_LOCATION ;scroll road
+0123   40F4 11 FF 5A    	ld de,ROADTO_SCREEN_MEM_LOCATION 
+0124   40F7 01 E0 02    	ld bc,736
+0125   40FA ED B8       	lddr
+0126   40FC C1          	pop bc  ;retrieve score
+0127   40FD E1          	pop hl  ;retrieve road posn
+0128   40FE E5          	push hl  ;save road posn
+0129   40FF 3E 38       	ld a,56  ;delete old road
+0130   4101 77          	ld (hl),a
+0131   4102 23          	inc hl
+0132   4103 77          	ld (hl),a
+0133   4104 11 09 00    	ld de,9
+0134   4107 19          	add hl,de
+0135   4108 77          	ld (hl),a
+0136   4109 23          	inc hl
+0137   410A 77          	ld (hl),a
+0138   410B             	;random road left or right
+0139   410B 21 B0 36    	ld hl,RANDOM_BYTES_MEM_LOCATION ;source of random bytes in ROM
+0140   410E 16 00       	ld d,0
+0141   4110 59          	ld e,c
+0142   4111 19          	add hl, de
+0143   4112 7E          	ld a,(hl)
+0144   4113 E1          	pop hl  ;retrieve road posn
+0145   4114 2B          	dec hl  ;move road posn 1 left
+0146   4115 E6 01       	and 1
+0147   4117 28 02       	jr z, roadleft
+0148   4119 23          	inc hl
+0149   411A 23          	inc hl
+0150   411B             roadleft
+0151   411B 7D          	ld a,l  ;check left
+0152   411C FE FF       	cp 255
+0153   411E 20 02       	jr nz, checkright
+0154   4120 23          	inc hl
+0155   4121 23          	inc hl
+0156   4122             checkright
+0157   4122 7D          	ld a,l
+0158   4123 FE 15       	cp 21
+0159   4125 20 02       	jr nz, newroadposn
+0160   4127 2B          	dec hl
+0161   4128 2B          	dec hl
+0162   4129             newroadposn
+0163   4129 E5          	push hl  ;save road posn
+0164   412A AF          	xor a  ;print new road
+0165   412B 77          	ld (hl),a
+0166   412C 23          	inc hl
+0167   412D 77          	ld (hl),a
+0168   412E 11 09 00    	ld de,9
+0169   4131 19          	add hl,de
+0170   4132 77          	ld (hl),a
+0171   4133 23          	inc hl
+0172   4134 77          	ld (hl),a
+0173   4135 03          	inc bc  ;add 1 to score
+0174   4136 C5          	push bc  ;save score
+0175   4137             	;wait routine
+0176   4137 01 FF 1F    	ld bc,$1fff ;max waiting time
+0177   413A             wait
+0178   413A 0B          	dec bc
+0179   413B 78          	ld a,b
+0180   413C B1          	or c
+0181   413D 20 FB       	jr nz, wait
+0182   413F C3 C5 40    	jp principalloop
+0183   4142             gameover
+0184   4142 C1          	pop bc  ;retrieve score
+0185   4143 E1          	pop hl  ;empty stack
+0186   4144 FB          	ei
+0187   4145 C9          	ret     ; game and tutorial written by Jon Kingsman
+0188   4146             
+0189   4146             fill_screen_with_char    ; adapted from http://swensont.epizy.com/ZX81Assembly.pdf screen1
+0190   4146 2A 0C 40    	ld hl,(D_FILE) ; Get start of display
+0191   4149 0E 16       	ld c,22 ; line counter (22 lines)
+0192   414B             loop1
+0193   414B 23          	inc hl ; get past EOL
+0194   414C 06 20       	ld b,32 ; character counter (32 rows)
+0195   414E             loop2 
+0196   414E 36 08       	ld (HL),GREY_SQAURE ; print grey square character
+0197   4150 23          	inc hl ; move to next print position
+0198   4151 10 FB       	djnz loop2 ; Do it again until B=0
+0199   4153 0D          	dec c ; next line
+0200   4154 20 F5       	jr nz,loop1
+0201   4156 C9          	ret 
+0202   4157             
+0203   4157             print_to_screen_at    ; adapted from http://swensont.epizy.com/ZX81Assembly.pdf screen1
+0204   4157 2A 0C 40    	ld hl,(D_FILE) ; Get start of display
+0205   415A 0E 16       	ld c,22 ; line counter (22 lines)
+0206   415C             Ploop1
+0207   415C 23          	inc hl ; get past EOL
+0208   415D 06 20       	ld b,32 ; character counter (32 rows)
+0209   415F             Ploop2 
+0210   415F 36 08       	ld (HL),$08 ; print grey square character
+0211   4161 23          	inc hl ; move to next print position
+0212   4162 10 FB       	djnz Ploop2 ; Do it again until B=0
+0213   4164 0D          	dec c ; next line
+0214   4165 20 F5       	jr nz,Ploop1
+0215   4167 C9          	ret 	
+0216   4168             	
+0217   4168             ;include our variables
+0218   4168             #include "vars.asm"
+0001+  4168             ;our variables 
+0002+  4168             
+0219   4168             
+0220   4168             ; ===========================================================
+0221   4168             ; code ends
+0222   4168             ; ===========================================================
+0223   4168             ;end the REM line and put in the RAND USR line to call our 'hex code'
+0224   4168             #include "line2.asm"
+0001+  4168             ;this is the end of line 1 - the REM	 		
+0002+  4168 76          				DEFB $76                        ; Newline				
+0003+  4169             ;followed by the the RAND USR line				
+0004+  4169             Line1End       
+0005+  4169 00 0A       Line2			DEFB $00,$0a
+0006+  416B 0E 00                       DEFW Line2End-Line2Text
+0007+  416D F9 D4       Line2Text     	DEFB $F9,$D4                    ; RAND USR
+0008+  416F 1D 22 21 1D 				DEFB $1D,$22,$21,$1D,$20        ; 16514                
+0008+  4173 20 
+0009+  4174 7E                          DEFB $7E                        ; Number
+0010+  4175 8F 01 04 00                 DEFB $8F,$01,$04,$00,$00        ; Numeric encoding
+0010+  4179 00 
+0011+  417A 76                          DEFB $76                        ; Newline
+0012+  417B             Line2End 
+0225   417B             
+0226   417B             ;display file defintion
+0227   417B             #include "screen.asm"               
+0001+  417B             ;ZX81 screens
+0002+  417B             ; Display file (ZX81 screen) - low res screen 
+0003+  417B 76          Display        	DEFB $76     
+0004+  417C 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 0
+0004+  4180 00 00 00 00 
+0004+  4184 00 00 00 00 
+0004+  4188 00 00 00 00 
+0004+  418C 00 00 00 00 
+0004+  4190 00 00 00 00 
+0004+  4194 00 00 00 00 
+0004+  4198 00 00 00 00 
+0004+  419C 76 
+0005+  419D 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 1
+0005+  41A1 00 00 00 00 
+0005+  41A5 00 00 00 00 
+0005+  41A9 00 00 00 00 
+0005+  41AD 00 00 00 00 
+0005+  41B1 00 00 00 00 
+0005+  41B5 00 00 00 00 
+0005+  41B9 00 00 00 00 
+0005+  41BD 76 
+0006+  41BE 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 2
+0006+  41C2 00 00 00 00 
+0006+  41C6 00 00 00 00 
+0006+  41CA 00 00 00 00 
+0006+  41CE 00 00 00 00 
+0006+  41D2 00 00 00 00 
+0006+  41D6 00 00 00 00 
+0006+  41DA 00 00 00 00 
+0006+  41DE 76 
+0007+  41DF 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 3
+0007+  41E3 00 00 00 00 
+0007+  41E7 00 00 00 00 
+0007+  41EB 00 00 00 00 
+0007+  41EF 00 00 00 00 
+0007+  41F3 00 00 00 00 
+0007+  41F7 00 00 00 00 
+0007+  41FB 00 00 00 00 
+0007+  41FF 76 
+0008+  4200 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 4
+0008+  4204 00 00 00 00 
+0008+  4208 00 00 00 00 
+0008+  420C 00 00 00 00 
+0008+  4210 00 00 00 00 
+0008+  4214 00 00 00 00 
+0008+  4218 00 00 00 00 
+0008+  421C 00 00 00 00 
+0008+  4220 76 
+0009+  4221 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 5
+0009+  4225 00 00 00 00 
+0009+  4229 00 00 00 00 
+0009+  422D 00 00 00 00 
+0009+  4231 00 00 00 00 
+0009+  4235 00 00 00 00 
+0009+  4239 00 00 00 00 
+0009+  423D 00 00 00 00 
+0009+  4241 76 
+0010+  4242 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 6
+0010+  4246 00 00 00 00 
+0010+  424A 00 00 00 00 
+0010+  424E 00 00 00 00 
+0010+  4252 00 00 00 00 
+0010+  4256 00 00 00 00 
+0010+  425A 00 00 00 00 
+0010+  425E 00 00 00 00 
+0010+  4262 76 
+0011+  4263 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 7
+0011+  4267 00 00 00 00 
+0011+  426B 00 00 00 00 
+0011+  426F 00 00 00 00 
+0011+  4273 00 00 00 00 
+0011+  4277 00 00 00 00 
+0011+  427B 00 00 00 00 
+0011+  427F 00 00 00 00 
+0011+  4283 76 
+0012+  4284 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 8
+0012+  4288 00 00 00 00 
+0012+  428C 00 00 00 00 
+0012+  4290 00 00 00 00 
+0012+  4294 00 00 00 00 
+0012+  4298 00 00 00 00 
+0012+  429C 00 00 00 00 
+0012+  42A0 00 00 00 00 
+0012+  42A4 76 
+0013+  42A5 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 9
+0013+  42A9 00 00 00 00 
+0013+  42AD 00 00 00 00 
+0013+  42B1 00 00 00 00 
+0013+  42B5 00 00 00 00 
+0013+  42B9 00 00 00 00 
+0013+  42BD 00 00 00 00 
+0013+  42C1 00 00 00 00 
+0013+  42C5 76 
+0014+  42C6 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 10
+0014+  42CA 00 00 00 00 
+0014+  42CE 00 00 00 00 
+0014+  42D2 00 00 00 00 
+0014+  42D6 00 00 00 00 
+0014+  42DA 00 00 00 00 
+0014+  42DE 00 00 00 00 
+0014+  42E2 00 00 00 00 
+0014+  42E6 76 
+0015+  42E7 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 11
+0015+  42EB 00 00 00 00 
+0015+  42EF 00 00 00 00 
+0015+  42F3 00 00 00 00 
+0015+  42F7 00 00 00 00 
+0015+  42FB 00 00 00 00 
+0015+  42FF 00 00 00 00 
+0015+  4303 00 00 00 00 
+0015+  4307 76 
+0016+  4308 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 12
+0016+  430C 00 00 00 00 
+0016+  4310 00 00 00 00 
+0016+  4314 00 00 00 00 
+0016+  4318 00 00 00 00 
+0016+  431C 00 00 00 00 
+0016+  4320 00 00 00 00 
+0016+  4324 00 00 00 00 
+0016+  4328 76 
+0017+  4329 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 13
+0017+  432D 00 00 00 00 
+0017+  4331 00 00 00 00 
+0017+  4335 00 00 00 00 
+0017+  4339 00 00 00 00 
+0017+  433D 00 00 00 00 
+0017+  4341 00 00 00 00 
+0017+  4345 00 00 00 00 
+0017+  4349 76 
+0018+  434A 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 14
+0018+  434E 00 00 00 00 
+0018+  4352 00 00 00 00 
+0018+  4356 00 00 00 00 
+0018+  435A 00 00 00 00 
+0018+  435E 00 00 00 00 
+0018+  4362 00 00 00 00 
+0018+  4366 00 00 00 00 
+0018+  436A 76 
+0019+  436B 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 15
+0019+  436F 00 00 00 00 
+0019+  4373 00 00 00 00 
+0019+  4377 00 00 00 00 
+0019+  437B 00 00 00 00 
+0019+  437F 00 00 00 00 
+0019+  4383 00 00 00 00 
+0019+  4387 00 00 00 00 
+0019+  438B 76 
+0020+  438C 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 16
+0020+  4390 00 00 00 00 
+0020+  4394 00 00 00 00 
+0020+  4398 00 00 00 00 
+0020+  439C 00 00 00 00 
+0020+  43A0 00 00 00 00 
+0020+  43A4 00 00 00 00 
+0020+  43A8 00 00 00 00 
+0020+  43AC 76 
+0021+  43AD 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 17
+0021+  43B1 00 00 00 00 
+0021+  43B5 00 00 00 00 
+0021+  43B9 00 00 00 00 
+0021+  43BD 00 00 00 00 
+0021+  43C1 00 00 00 00 
+0021+  43C5 00 00 00 00 
+0021+  43C9 00 00 00 00 
+0021+  43CD 76 
+0022+  43CE 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 18
+0022+  43D2 00 00 00 00 
+0022+  43D6 00 00 00 00 
+0022+  43DA 00 00 00 00 
+0022+  43DE 00 00 00 00 
+0022+  43E2 00 00 00 00 
+0022+  43E6 00 00 00 00 
+0022+  43EA 00 00 00 00 
+0022+  43EE 76 
+0023+  43EF 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 19
+0023+  43F3 00 00 00 00 
+0023+  43F7 00 00 00 00 
+0023+  43FB 00 00 00 00 
+0023+  43FF 00 00 00 00 
+0023+  4403 00 00 00 00 
+0023+  4407 00 00 00 00 
+0023+  440B 00 00 00 00 
+0023+  440F 76 
+0024+  4410 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 20
+0024+  4414 00 00 00 00 
+0024+  4418 00 00 00 00 
+0024+  441C 00 00 00 00 
+0024+  4420 00 00 00 00 
+0024+  4424 00 00 00 00 
+0024+  4428 00 00 00 00 
+0024+  442C 00 00 00 00 
+0024+  4430 76 
+0025+  4431 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 21
+0025+  4435 00 00 00 00 
+0025+  4439 00 00 00 00 
+0025+  443D 00 00 00 00 
+0025+  4441 00 00 00 00 
+0025+  4445 00 00 00 00 
+0025+  4449 00 00 00 00 
+0025+  444D 00 00 00 00 
+0025+  4451 76 
+0026+  4452 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 22
+0026+  4456 00 00 00 00 
+0026+  445A 00 00 00 00 
+0026+  445E 00 00 00 00 
+0026+  4462 00 00 00 00 
+0026+  4466 00 00 00 00 
+0026+  446A 00 00 00 00 
+0026+  446E 00 00 00 00 
+0026+  4472 76 
+0027+  4473 00 00 00 00                 DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$76 ; Line 23
+0027+  4477 00 00 00 00 
+0027+  447B 00 00 00 00 
+0027+  447F 00 00 00 00 
+0027+  4483 00 00 00 00 
+0027+  4487 00 00 00 00 
+0027+  448B 00 00 00 00 
+0027+  448F 00 00 00 00 
+0027+  4493 76 
+0028+  4494             
+0228   4494             
+0229   4494             ;close out the basic program
+0230   4494             #include "endbasic.asm"
+0001+  4494             ; close out the BASIC program structure
+0002+  4494             ; BASIC Variables area 
+0003+  4494             Variables:      
+0004+  4494 80          VariablesEnd:   DEFB $80
+0005+  4495             BasicEnd:                              
+0006+  4495             
+0007+  4495             
+0008+  4495             #END
 tasm: Number of errors = 0
