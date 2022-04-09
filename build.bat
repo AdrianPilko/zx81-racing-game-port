@@ -1,4 +1,4 @@
-REM clean up before calling assembler
+REM clean up before calling assembler 
 del racing.p
 del racing.lst
 del racing.sym
