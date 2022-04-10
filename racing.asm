@@ -21,7 +21,8 @@
 #define COL_IN_SCREEN 32
 #define ROAD_SCREEN_MEM_OFFSET 9    
 #define WIDTH_OF_ROAD 9
-#define CAR_SCREEN_MEM_START_OFFSET 776
+#define CAR_SCREEN_MEM_START_OFFSET 742
+#define SCREEN_MEM_OFFSET_TO_LAST_ROW 736
 #define ROADFROM_SCREEN_MEM_LOCATION 23263
 #define ROADTO_SCREEN_MEM_LOCATION 23295
 #define RANDOM_BYTES_MEM_LOCATION 14000
@@ -48,17 +49,43 @@
 	jp main
 
 var_car_pos 
-	DEFB 0,0,0,0
+	DEFB 0,0
+var_last_row_addr
+	DEFB 0,0
 var_road_pos
-	DEFB 0,0,0,0
+	DEFB 0,0
 var_scroll_road_from
-	DEFB 0,0,0,0
+	DEFB 0,0
 var_scroll_road_to
-	DEFB 0,0,0,0
+	DEFB 0,0
+
+hprint 		;;http://swensont.epizy.com/ZX81Assembly.pdf?i=1
+	PUSH AF ;store the original value of A for later
+	AND $F0 ; isolate the first digit
+	RRA
+	RRA
+	RRA
+	RRA
+	ADD A,$1C ; add 28 to the character code
+	CALL PRINT ;
+	POP AF ; retrieve original value of A
+	AND $0F ; isolate the second digit
+	ADD A,$1C ; add 28 to the character code
+	CALL PRINT
+	LD A,_NL
+	CALL PRINT ; print a space character
+	RET
+
 
 main
 	call CLS	
 	di
+	
+	ld hl, (D_FILE)		; detect crash with edge of road
+	ld de, SCREEN_MEM_OFFSET_TO_LAST_ROW	
+	add hl,de ; hl is now the address of last row of screen memory    
+	ld (var_last_row_addr),hl    ; store last row
+
 	
 	ld hl,(D_FILE) ;initialise road start memory address
 	ld de, ROAD_SCREEN_MEM_OFFSET
@@ -114,20 +141,23 @@ moveright
 	
 dontmove
 	ld (var_car_pos),hl ; store new car pos	
-	ld a,CAR_CHARACTER_CODE 
-	ld (hl),a	
-	jp preWaitloop		; cut next bit for debug to get car moving left right	
+		
+	ld de, (var_last_row_addr)
+	ld hl, (var_car_pos);load car pos to hl
 	
-	;di
-
-	ld de, 32 ;new carposn
-	xor a  ;set carry flag to 0
-	sbc hl,de
+	xor a  			;set carry flag to 0
+	sbc hl,de		; get the offset from edge of screen (range 0 to 31)
+	
+	
+	call hprint
+	
 	ld a,(hl) ;crash?
 	or a
 	jr z,gameover
-	ld a,CAR_CHARACTER_CODE  ;print car
-	ld (hl),a
+	ld hl,(var_car_pos) ; get car pos	
+	ld a,CAR_CHARACTER_CODE 
+	ld (hl),a		
+		
 	
 	jp preWaitloop		; cut next bit for debug to get car moving left right	
 	
