@@ -92,15 +92,16 @@ initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is bete
 	ld (hl),a
 	ld (var_car_pos),hl ;save car posn
 	
+	;ei
+	
 principalloop
 	;ld hl,(var_car_pos)						;retrieve car posn
 	;ld a,NOT_CAR_CHARACTER_CODE  					;erase car
 	;ld (hl),a
 	
-	ei
-	ld a, KEYBOARD_READ_PORT_SHIFT_TO_V 			; read keyboard shift to v
-	in a, (KEYBOARD_READ_PORT)						; read from io port
-	di
+	;ei
+	ld a, KEYBOARD_READ_PORT_SHIFT_TO_V			; read keyboard shift to v
+	in a, (KEYBOARD_READ_PORT_SHIFT_TO_V)						; read from io port	
 	bit 2, a								; check bit set for key press right move "M"
 
 	                      
@@ -117,17 +118,14 @@ principalloop
 	ld (hl),a
 	
 	;ld hl,(var_car_pos)	
-	;inc hl
-	;ld a,CAR_CHARACTER_CODE 
-	;ld (hl),a
+	inc l
+	ld a,CAR_CHARACTER_CODE 
+	ld (hl),a
+	ld (var_car_pos),hl ; store new car pos
 	
-;jp gameover; return early for debug	
-
-				; halt code for debug
-haltLoop2
-	jr haltLoop2
+	;jp gameover; return early for debug	
 	
-	jp principalloop		; cut next bit for debug to get car moving left right
+	jp preWaitloop		; cut next bit for debug to get car moving left right
 	
 moveright
 	ld a,KEYBOARD_READ_PORT_SPACE_TO_B 				;read keyboard space to b
@@ -221,6 +219,7 @@ newroadposn
 	inc bc  ;add 1 to score
 	push bc  ;save score
 	;wait routine
+preWaitloop	
 	ld bc,$1fff ;max waiting time
 waitloop
 	dec bc
