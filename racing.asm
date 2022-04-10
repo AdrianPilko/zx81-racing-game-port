@@ -65,7 +65,9 @@ to_print_mem
 	
 crash_message_txt
 		DEFB	_Y,_O,_U,__,_C,_R,_A,_S,_H,_E,_D,$ff
-
+game_title_txt
+		DEFB	__,__,_D,_E,_A,_T,_H,__,__,__,__,__,__,__,__,__,__,__,__,__,__,_R,_A,_C,_E,__,__,__,__,__,$ff
+		
 to_print .equ to_print_mem ;use hprint16
 	
 
@@ -101,10 +103,10 @@ hprint16_loop
 main
 	call CLS	
 	di
-	
-	;ld hl, (D_FILE)		; detect crash with edge of road
-	;ld de, SCREEN_MEM_OFFSET_TO_LAST_ROW	
-	;add hl,de ; hl is now the address of last row of screen memory    
+	ld bc,1
+	ld de,game_title_txt
+	call printGameBannerString
+
 	
 	ld hl,(D_FILE) ;initialise road start memory address
 	ld de, ROAD_SCREEN_MEM_OFFSET
@@ -310,6 +312,19 @@ printstring_loop
 printstring_end	
 	ret
 
+printGameBannerString
+	ld hl,(D_FILE)
+	add hl,bc	
+printGameBannerString_loop
+	ld a,(de)
+	cp $ff
+	jp z,printGameBannerString_end
+	ld (hl),a
+	inc hl
+	inc de
+	jr printGameBannerString_loop
+printGameBannerString_end	
+	ret
 	
 ;include our variables
 #include "vars.asm"
