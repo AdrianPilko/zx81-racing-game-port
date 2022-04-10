@@ -38,21 +38,23 @@
 
 #define GREY_SQAURE 8  
 
-; keyboard caps to v
-#define KEYBOARD_READ_MEMORY_LOCATION_CAPV $FE
+; keyboard port for shift key to v
+#define KEYBOARD_READ_PORT_SHIFT_TO_V $FE
 ; keyboard space to b
-#define KEYBOARD_READ_MEMORY_LOCATION_SPACEB $7F 
+#define KEYBOARD_READ_PORT_SPACE_TO_B $7F 
+; starting port numbner for keyboard, is same as first port for shift to v
+#define KEYBOARD_READ_PORT $FE 
 
 	jp main
 
-var_car_pos  ; was 32900 in zx spec version
-	DEFB 0,0
+var_car_pos 
+	DEFB 0,0,0,0
 var_road_pos
-	DEFB 0,0
+	DEFB 0,0,0,0
 var_scroll_road_from
-	DEFB 0,0
+	DEFB 0,0,0,0
 var_scroll_road_to
-	DEFB 0,0
+	DEFB 0,0,0,0
 
 main
 	call CLS	
@@ -89,27 +91,70 @@ initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is bete
 	ld a,CAR_CHARACTER_CODE 
 	ld (hl),a
 	ld (var_car_pos),hl ;save car posn
-
 	
 principalloop
-	ld hl,(var_car_pos) ;retrieve car posn
-	ld a,NOT_CAR_CHARACTER_CODE  ;erase car
-	ld (hl),a
+	;ld hl,(var_car_pos)						;retrieve car posn
+	;ld a,NOT_CAR_CHARACTER_CODE  					;erase car
+	;ld (hl),a
+	
 	ei
-	ld bc,KEYBOARD_READ_MEMORY_LOCATION_CAPV ;read keyboard caps to v
-	in a,(c)
-	cp 191
-	jr nz, moveright
-	inc l
-moveright
-	ld bc,KEYBOARD_READ_MEMORY_LOCATION_SPACEB ;read keyboard space to b
-	in a,(c)
-	cp 191
-	jr nz, dontmove
-	dec l
-		;jp gameover; return early for debug
-dontmove
+	ld a, KEYBOARD_READ_PORT_SHIFT_TO_V 			; read keyboard shift to v
+	in a, (KEYBOARD_READ_PORT)						; read from io port
 	di
+	bit 2, a								; check bit set for key press right move "M"
+
+	                      
+				; halt code for debug
+;haltLoop1
+;	jr haltLoop1	
+	
+	
+	;jr z, moveright
+	jr nz, principalloop
+
+	ld hl,(var_car_pos)						;retrieve car posn
+	ld a,NOT_CAR_CHARACTER_CODE  					;erase car
+	ld (hl),a
+	
+	;ld hl,(var_car_pos)	
+	;inc hl
+	;ld a,CAR_CHARACTER_CODE 
+	;ld (hl),a
+	
+;jp gameover; return early for debug	
+
+				; halt code for debug
+haltLoop2
+	jr haltLoop2
+	
+	jp principalloop		; cut next bit for debug to get car moving left right
+	
+moveright
+	ld a,KEYBOARD_READ_PORT_SPACE_TO_B 				;read keyboard space to b
+	in a,(KEYBOARD_READ_PORT)						; read from io port
+	bit 2, a										; check bit set for key press right move "Z"
+	jr z, dontmove
+	
+	; for debug put char in top left of screen if key pressed
+	ld hl,(D_FILE) 	; for debug
+	ld de,1
+	add hl,de
+	ld a,CAR_CHARACTER_CODE ; for debug
+	ld (hl),a	; for debug
+	
+	ld hl,var_car_pos 	
+	dec l
+	jp waitloop		; cut next bit for debug to get car moving left right
+	
+dontmove
+	
+	jp waitloop		; cut next bit for debug to get car moving left right	
+
+
+
+
+	di
+
 	ld (var_car_pos),hl ;store car posn
 	ld de, 32 ;new carposn
 	xor a  ;set carry flag to 0
@@ -119,6 +164,9 @@ dontmove
 	jr z,gameover
 	ld a,CAR_CHARACTER_CODE  ;print car
 	ld (hl),a
+
+	
+;jp gameover; return early for debug	
 	ld hl,ROADFROM_SCREEN_MEM_LOCATION ;scroll road
 	ld de,ROADTO_SCREEN_MEM_LOCATION 
 	ld bc,736
@@ -174,11 +222,11 @@ newroadposn
 	push bc  ;save score
 	;wait routine
 	ld bc,$1fff ;max waiting time
-wait
+waitloop
 	dec bc
 	ld a,b
 	or c
-	jr nz, wait
+	jr nz, waitloop
 	jp principalloop
 gameover
 	pop bc  ;retrieve score
