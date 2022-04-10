@@ -17,12 +17,12 @@
 ; problem with zx81 is the screen display D_FILE memory address changes with size of basic program 
 ; see https://www.sinclairzxworld.com/viewtopic.php?t=3919
 ; (the asm here is converted to one line of basic)
-#define ROWS_IN_SCREEN 22
+#define ROWS_IN_SCREEN 24
 #define COL_IN_SCREEN 32
 #define ROAD_SCREEN_MEM_OFFSET 9    
 #define WIDTH_OF_ROAD 9
-#define CAR_SCREEN_MEM_START_OFFSET 742
-#define SCREEN_MEM_OFFSET_TO_LAST_ROW 736
+#define CAR_SCREEN_MEM_START_OFFSET 773
+;#define SCREEN_MEM_OFFSET_TO_LAST_ROW 736
 #define ROADFROM_SCREEN_MEM_LOCATION 23263
 #define ROADTO_SCREEN_MEM_LOCATION 23295
 #define RANDOM_BYTES_MEM_LOCATION 14000
@@ -50,42 +50,61 @@
 
 var_car_pos 
 	DEFB 0,0
-var_last_row_addr
+var_road_left_addr
 	DEFB 0,0
+var_road_right_addr
+	DEFB 0,0	
 var_road_pos
 	DEFB 0,0
 var_scroll_road_from
 	DEFB 0,0
 var_scroll_road_to
 	DEFB 0,0
+to_print_mem
+	DEFB 0,0
+	
+crash_message_txt
+		DEFB	_Y,_O,_U,__,_C,_R,_A,_S,_H,_E,_D,$ff
 
-hprint 		;;http://swensont.epizy.com/ZX81Assembly.pdf?i=1
-	PUSH AF ;store the original value of A for later
-	AND $F0 ; isolate the first digit
-	RRA
-	RRA
-	RRA
-	RRA
-	ADD A,$1C ; add 28 to the character code
-	CALL PRINT ;
-	POP AF ; retrieve original value of A
-	AND $0F ; isolate the second digit
-	ADD A,$1C ; add 28 to the character code
-	CALL PRINT
-	LD A,_NL
-	CALL PRINT ; print a space character
-	RET
+to_print .equ to_print_mem ;use hprint16
+	
+
+hprint16  ; print one 2byte number stored in location $to_print
+	;ld hl,$to_print
+	ld hl,$to_print+2
+	ld b,2	
+hprint16_loop	
+	ld a, (hl)
+	push af ;store the original value of a for later
+	and $f0 ; isolate the first digit
+	rra
+	rra
+	rra
+	rra
+	add a,$1c ; add 28 to the character code
+	call PRINT ;
+	pop af ; retrieve original value of a
+	and $0f ; isolate the second digit
+	add a,$1c ; add 28 to the character code
+	call PRINT
+	ld a, 00;_NL ;print new line ; 00 is space
+	;call PRINT ; print a space character
+	
+	dec hl
+	djnz hprint16_loop
+	; restore registers
+	ld a, _NL
+	call PRINT
+	ret
 
 
 main
 	call CLS	
 	di
 	
-	ld hl, (D_FILE)		; detect crash with edge of road
-	ld de, SCREEN_MEM_OFFSET_TO_LAST_ROW	
-	add hl,de ; hl is now the address of last row of screen memory    
-	ld (var_last_row_addr),hl    ; store last row
-
+	;ld hl, (D_FILE)		; detect crash with edge of road
+	;ld de, SCREEN_MEM_OFFSET_TO_LAST_ROW	
+	;add hl,de ; hl is now the address of last row of screen memory    
 	
 	ld hl,(D_FILE) ;initialise road start memory address
 	ld de, ROAD_SCREEN_MEM_OFFSET
@@ -99,14 +118,21 @@ initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is bete
 	ld (hl),a    ;; road starts as two staight vertical lines 
 	inc hl   	 ;; make each edge of road 2 characters wide
 	ld (hl),a   
+	
+	ld (var_road_left_addr),hl ; store road left pos (every time but on last iteration will be correct for last row
+	
 	ld de,WIDTH_OF_ROAD   
 	add hl,de			  ;; add offset to get to other side of road
+	
+	ld (var_road_right_addr),hl ; store road right pos (every time but on last iteration will be correct for last row
+	
 	ld (hl),a				;; make each edge of road 2 characters wide
 	inc hl					
 	ld (hl),a
 	ld de,22  ;; on zx spectrum had ld de,21
 	add hl,de
-	djnz initialiseRoad
+	djnz initialiseRoad	
+	
 
 	ld b,ROWS_IN_SCREEN
 	ld c,b  ;initialise score
@@ -142,18 +168,25 @@ moveright
 dontmove
 	ld (var_car_pos),hl ; store new car pos	
 		
-	ld de, (var_last_row_addr)
+	ld de, (var_road_left_addr)
 	ld hl, (var_car_pos);load car pos to hl
+	
+	;; detect left road collision
+	xor a  			;set carry flag to 0
+	sbc hl,de		; get the offset from edge of screen (range 0 to 31)
+	;ld (to_print),hl
+	;call hprint16 
+	
+	jr z,gameover
+
+	;; detect right road collision
+	ld de, (var_car_pos);load car pos to hl	
+	ld hl, (var_road_right_addr) ; swapped hl de as right side of road is bigger offset avoiding negative
 	
 	xor a  			;set carry flag to 0
 	sbc hl,de		; get the offset from edge of screen (range 0 to 31)
-	
-	
-	call hprint
-	
-	ld a,(hl) ;crash?
-	or a
 	jr z,gameover
+		
 	ld hl,(var_car_pos) ; get car pos	
 	ld a,CAR_CHARACTER_CODE 
 	ld (hl),a		
@@ -225,9 +258,12 @@ waitloop
 	jr nz, waitloop
 	jp principalloop
 gameover
+	ld bc,1
+	ld de,crash_message_txt
+	call printstring
 	pop bc  ;retrieve score
 	pop hl  ;empty stack
-	ei
+;	ei
 	ret     ; game and tutorial written by Jon Kingsman
 
 fill_screen_with_char    ; adapted from http://swensont.epizy.com/ZX81Assembly.pdf screen1
@@ -257,6 +293,23 @@ Ploop2
 	dec c ; next line
 	jr nz,Ploop1
 	ret 	
+
+	
+
+printstring
+	ld hl,(D_FILE)
+	add hl,bc	
+printstring_loop
+	ld a,(de)
+	cp $ff
+	jp z,printstring_end
+	ld (hl),a
+	inc hl
+	inc de
+	jr printstring_loop
+printstring_end	
+	ret
+
 	
 ;include our variables
 #include "vars.asm"
