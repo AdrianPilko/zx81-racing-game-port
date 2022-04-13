@@ -16,6 +16,6 @@ road	                = 22537 => offset at start is 22537 - 22528 = 9 = top row n
 
 read keyboard caps to v	= 65278 => $FE
 read keyboard space to b= 32766 => $7F 
-scroll road 			= 23263 => 
+scroll road 			= 23263 => 23263 = 22528 + 735
 scroll road             = 23295 =>
 source of random bytes	= 14000 =>
