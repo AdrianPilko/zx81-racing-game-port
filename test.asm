@@ -1,5 +1,5 @@
 ;;;;;;;;;;;;;;;;;;;;;
-test program screen scroll
+;test program screen scroll
 ;;;;;;;;;;;;;;;;;;;;;
 
 #include "zx81defs.asm" ;; https://www.sinclairzxworld.com/viewtopic.php?t=2186&start=40
@@ -68,6 +68,11 @@ var_scroll_road_to
 	DEFB 0,0
 to_print_mem
 	DEFB 0,0
+	
+roadCharacter
+	DEFB 0
+roadCharacterControl
+	DEFB 0	
 
 to_print .equ to_print_mem ;use hprint16
 	
@@ -111,18 +116,18 @@ main
 	ld de, SCREEN_SCROLL_MEM_OFFSET
 	add hl, de	
 	ld (var_scroll_road_from), hl
-	ld de, 32
+	ld de, 21
 	add hl, de
 	ld (var_scroll_road_to), hl
 
 	ld hl,(D_FILE) ;initialise road start memory address
 	ld de, ROAD_SCREEN_MEM_OFFSET
 	add hl, de	
-	xor a  ;???? possibly clears cpu flags?
-	ld a, ROAD_CHARACTER_CODE
-	ld b,ROWS_IN_SCREEN
-	
+
+	ld a, 136
+	ld b,24 ; for this debug version do half and alternate pattern to see scroll
 initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is beter name of what it's doing!!
+	
 	ld (hl),a    ;; road starts as two staight vertical lines 
 	inc hl   	 ;; make each edge of road 2 characters wide
 	ld (hl),a   	
@@ -133,20 +138,57 @@ initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is bete
 	ld (hl),a				;; make each edge of road 2 characters wide
 	inc hl					
 	ld (hl),a
-	ld de,22  ;; on zx spectrum had ld de,21
+	ld de,22  ;; on zx spectrum had ld de,21, but end of line on zx81 has chr$128 needs skip
+
 	add hl,de
 	djnz initialiseRoad	
+	
+	ld a, 136
+	ld (roadCharacter), a
+	ld a, 2
+	ld (roadCharacterControl), a
 	
 principalloop
 	;scroll road	
 	ld hl,(var_scroll_road_from)  ; load left road address	
 	ld de,(var_scroll_road_to) ; load right road address		
-	ld bc,736					; 736 = 32columns * 23 rows
+	ld bc,737					; 736 = 32columns * 23 rows
 	; LDDR repeats the instruction LDD (Does a LD (DE),(HL) and decrements 
 	; each of DE, HL, and BC) until BC=0. Note that if BC=0 before 
 	; the start of the routine, it will try loop around until BC=0 again.	
-	lddr	
+	lddr
+
 	
+	xor a  ;print new road
+	
+	ld a, (roadCharacter)
+	
+	ld hl,(D_FILE) ; road start memory address
+	ld de, ROAD_SCREEN_MEM_OFFSET
+	add hl, de	
+	
+	ld (hl),a
+	inc hl
+	ld (hl),a
+	ld de,WIDTH_OF_ROAD
+	add hl,de
+	ld (hl),a
+	inc hl
+	ld (hl),a
+
+;toggle road character to show if scrolling is working
+	xor a  ;print new road
+	ld a,(roadCharacterControl)
+	dec a
+	ld (roadCharacterControl),a
+	ld a, 136
+	ld (roadCharacter), a
+	jp nz, preWaitloop
+	ld a, 2
+	ld (roadCharacterControl), a
+	ld a, 128
+	ld (roadCharacter), a
+	jp principalloop
 preWaitloop	
 	ld bc,$05ff ;max waiting time
 waitloop
@@ -158,7 +200,6 @@ waitloop
 gameover
 	ret     ; game and tutorial written by Jon Kingsman
 
-	
 ;include our variables
 #include "vars.asm"
 
