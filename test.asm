@@ -120,7 +120,7 @@ main
 	ld de, SCREEN_SCROLL_MEM_OFFSET
 	add hl, de	
 	ld (var_scroll_road_from), hl
-	ld de, 21
+	ld de, 32
 	add hl, de
 	ld (var_scroll_road_to), hl
 
@@ -130,7 +130,7 @@ main
 	ld (var_road_left_addr),hl ; store initial road left pos at top left of screen
 
 	ld a, 136
-	ld b,24 ; for this debug version do half and alternate pattern to see scroll
+	ld b,23 ; for this debug version do half and alternate pattern to see scroll
 initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is beter name of what it's doing!!
 	
 	ld (hl),a    ;; road starts as two staight vertical lines 
@@ -223,7 +223,7 @@ roadright
 	ld a, (road_offset_from_edge)
 	inc a 
 	ld (road_offset_from_edge),a
-	cp 15
+	cp 21
 	jp nz, printNewRoad   ; skip inc if it's not at edge otherwise inc 
 
 	dec a

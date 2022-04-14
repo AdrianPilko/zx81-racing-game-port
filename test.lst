@@ -265,7 +265,7 @@
 0120   40C6 11 DF 02    	ld de, SCREEN_SCROLL_MEM_OFFSET
 0121   40C9 19          	add hl, de	
 0122   40CA 22 8D 40    	ld (var_scroll_road_from), hl
-0123   40CD 11 15 00    	ld de, 21
+0123   40CD 11 20 00    	ld de, 32
 0124   40D0 19          	add hl, de
 0125   40D1 22 8F 40    	ld (var_scroll_road_to), hl
 0126   40D4             
@@ -275,7 +275,7 @@
 0130   40DB 22 87 40    	ld (var_road_left_addr),hl ; store initial road left pos at top left of screen
 0131   40DE             
 0132   40DE 3E 88       	ld a, 136
-0133   40E0 06 18       	ld b,24 ; for this debug version do half and alternate pattern to see scroll
+0133   40E0 06 17       	ld b,23 ; for this debug version do half and alternate pattern to see scroll
 0134   40E2             initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is beter name of what it's doing!!
 0135   40E2             	
 0136   40E2 77          	ld (hl),a    ;; road starts as two staight vertical lines 
@@ -318,7 +318,7 @@
 0173   4114 CB 57       	bit 2, a
 0174   4116 28 2E       	jr z, roadright
 0175   4118             	
-0176   4118 18 56       	jr printNewRoad
+0176   4118 18 56       	jr printNewRoad 
 0177   411A             
 0178   411A             roadleft	
 0179   411A             	; erase old road
@@ -368,7 +368,7 @@
 0223   415C 3A 93 40    	ld a, (road_offset_from_edge)
 0224   415F 3C          	inc a 
 0225   4160 32 93 40    	ld (road_offset_from_edge),a
-0226   4163 FE 0F       	cp 15
+0226   4163 FE 15       	cp 21
 0227   4165 C2 70 41    	jp nz, printNewRoad   ; skip inc if it's not at edge otherwise inc 
 0228   4168             
 0229   4168 3D          	dec a
