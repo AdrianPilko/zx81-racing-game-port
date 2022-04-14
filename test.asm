@@ -165,20 +165,19 @@ principalloop
 	ld a, KEYBOARD_READ_PORT_SHIFT_TO_V			; read keyboard shift to v
 	in a, (KEYBOARD_READ_PORT)						; read from io port	
 	bit 2, a								; check bit set for key press right move "M"
-	
 	jr z, carleft
-
+	
 	ld a, KEYBOARD_READ_PORT_SPACE_TO_B			; read keyboard shift to v
 	in a, (KEYBOARD_READ_PORT)						; read from io port	
-	bit 2, a
-	
+	bit 2, a	
 	jr z, carright
 	
 	jr noCarMove
+	
 carleft
 	dec hl
 	ld (var_car_pos), hl
-	jr noCarMove
+	jr noCarMove	
 carright
 	inc hl
 	ld (var_car_pos), hl
