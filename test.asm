@@ -149,9 +149,49 @@ initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is bete
 	ld (roadCharacter), a
 	ld a, 2
 	ld (roadCharacterControl), a
+
+;initialise car	
+	ld hl,(D_FILE) 
+	ld de, CAR_SCREEN_MEM_START_OFFSET
+	add hl, de	
+	ld a,CAR_CHARACTER_CODE 
+	ld (hl),a
+	ld (var_car_pos),hl ;save car posn
 	
 principalloop
 
+
+	;user input to move road left or right	
+	ld a, KEYBOARD_READ_PORT_SHIFT_TO_V			; read keyboard shift to v
+	in a, (KEYBOARD_READ_PORT)						; read from io port	
+	bit 2, a								; check bit set for key press right move "M"
+	jr z, carleft
+
+	ld a, KEYBOARD_READ_PORT_SPACE_TO_B			; read keyboard shift to v
+	in a, (KEYBOARD_READ_PORT)						; read from io port	
+	bit 2, a
+	jr z, carright
+	jr noCarMove
+carleft
+	ld hl,(var_car_pos) ; load car pos
+	dec hl
+	ld (var_car_pos), hl
+	jr noCarMove
+carright
+	ld hl,(var_car_pos) ; load car pos
+	inc hl
+	ld (var_car_pos), hl
+noCarMove	
+	ld hl,(var_car_pos) ; load car pos
+	ld de, 32 ;new carposn
+	xor a  ;set carry flag to 0
+	sbc hl,de
+	ld a,(hl)
+	or a
+	;jp z,gameover
+	ld a, CAR_CHARACTER_CODE
+	ld (hl),a
+	
 	;scroll road	
 	ld hl,(var_scroll_road_from)  ; load left road address	
 	ld de,(var_scroll_road_to) ; load right road address		
@@ -174,16 +214,6 @@ principalloop
 	jr z, roadleft	
 	
 	jr roadright
-	;user input to move road left or right	
-	;ld a, KEYBOARD_READ_PORT_SHIFT_TO_V			; read keyboard shift to v
-	;in a, (KEYBOARD_READ_PORT)						; read from io port	
-	;bit 2, a								; check bit set for key press right move "M"
-	;jr z, roadleft
-
-	;ld a, KEYBOARD_READ_PORT_SPACE_TO_B			; read keyboard shift to v
-	;in a, (KEYBOARD_READ_PORT)						; read from io port	
-	;bit 2, a
-	;jr z, roadright
 	
 	jr printNewRoad 
 
