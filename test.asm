@@ -173,7 +173,7 @@ principalloop
 	bit 2, a
 	jr z, roadright
 	
-	jr printNewRoad
+	jr printNewRoad 
 
 roadleft	
 	; erase old road
