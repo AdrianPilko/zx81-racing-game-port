@@ -34,7 +34,7 @@
 ; probably should run some code to detect if this is 1K or 16K as well, or just have 2 verisons 1K and 16K
 #define D_FILE 16396
 ;black block
-#define CAR_CHARACTER_CODE 128  
+#define CAR_CHARACTER_CODE 138  
 ;blank space
 #define NOT_CAR_CHARACTER_CODE 0
 ;blank space
