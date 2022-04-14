@@ -152,7 +152,6 @@ initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is bete
 	
 principalloop
 
-
 	;scroll road	
 	ld hl,(var_scroll_road_from)  ; load left road address	
 	ld de,(var_scroll_road_to) ; load right road address		
@@ -162,16 +161,29 @@ principalloop
 	; the start of the routine, it will try loop around until BC=0 again.	
 	lddr
 
-	;user input to move road left or right
-	ld a, KEYBOARD_READ_PORT_SHIFT_TO_V			; read keyboard shift to v
-	in a, (KEYBOARD_READ_PORT)						; read from io port	
-	bit 2, a								; check bit set for key press right move "M"
-	jr z, roadleft
+	; got this random number gen from https://spectrumcomputing.co.uk/forums/viewtopic.php?t=4571
+    add hl,hl     ; 29    11
+    sbc a,a       ; 9F     4
+    and %00101101 ; E62D   7
+    xor l         ; AD     4
+    ld l,a        ; 6F     4
+    ld a,r        ; ED5F   9
+    add a,h       ; 84     4
+	
+	and 1
+	jr z, roadleft	
+	
+	jr roadright
+	;user input to move road left or right	
+	;ld a, KEYBOARD_READ_PORT_SHIFT_TO_V			; read keyboard shift to v
+	;in a, (KEYBOARD_READ_PORT)						; read from io port	
+	;bit 2, a								; check bit set for key press right move "M"
+	;jr z, roadleft
 
-	ld a, KEYBOARD_READ_PORT_SPACE_TO_B			; read keyboard shift to v
-	in a, (KEYBOARD_READ_PORT)						; read from io port	
-	bit 2, a
-	jr z, roadright
+	;ld a, KEYBOARD_READ_PORT_SPACE_TO_B			; read keyboard shift to v
+	;in a, (KEYBOARD_READ_PORT)						; read from io port	
+	;bit 2, a
+	;jr z, roadright
 	
 	jr printNewRoad 
 
