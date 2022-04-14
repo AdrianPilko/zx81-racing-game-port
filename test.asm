@@ -68,7 +68,8 @@ var_scroll_road_to
 	DEFB 0,0
 to_print_mem
 	DEFB 0,0
-	
+road_offset_from_edge	
+	DEFB 0
 roadCharacter
 	DEFB 0
 roadCharacterControl
@@ -108,7 +109,10 @@ hprint16_loop
 
 main
 	call CLS	
-		
+
+	ld a,9
+	ld (road_offset_from_edge),a
+	
 	;; initialise the scroll from and too, 
 	;; scroll from is the D_FILE+(cols*(rows-1)-1
 	;; scroll to is the D_FILE + (cols*rows)-1     (= scroll from + 32)
@@ -123,6 +127,7 @@ main
 	ld hl,(D_FILE) ;initialise road start memory address
 	ld de, ROAD_SCREEN_MEM_OFFSET
 	add hl, de	
+	ld (var_road_left_addr),hl ; store initial road left pos at top left of screen
 
 	ld a, 136
 	ld b,24 ; for this debug version do half and alternate pattern to see scroll
@@ -131,10 +136,8 @@ initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is bete
 	ld (hl),a    ;; road starts as two staight vertical lines 
 	inc hl   	 ;; make each edge of road 2 characters wide
 	ld (hl),a   	
-	ld (var_road_left_addr),hl ; store road left pos (every time but on last iteration will be correct for last row	
 	ld de,WIDTH_OF_ROAD   
 	add hl,de			  ;; add offset to get to other side of road	
-	ld (var_road_right_addr),hl ; store road right pos (every time but on last iteration will be correct for last row
 	ld (hl),a				;; make each edge of road 2 characters wide
 	inc hl					
 	ld (hl),a
@@ -149,6 +152,8 @@ initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is bete
 	ld (roadCharacterControl), a
 	
 principalloop
+
+
 	;scroll road	
 	ld hl,(var_scroll_road_from)  ; load left road address	
 	ld de,(var_scroll_road_to) ; load right road address		
@@ -158,15 +163,9 @@ principalloop
 	; the start of the routine, it will try loop around until BC=0 again.	
 	lddr
 
-	
-	xor a  ;print new road
-	
-	ld a, (roadCharacter)
-	
-	ld hl,(D_FILE) ; road start memory address
-	ld de, ROAD_SCREEN_MEM_OFFSET
-	add hl, de	
-	
+	; erase old road
+	ld a, 0
+	ld hl,(var_road_left_addr)
 	ld (hl),a
 	inc hl
 	ld (hl),a
@@ -176,7 +175,65 @@ principalloop
 	inc hl
 	ld (hl),a
 
-;toggle road character to show if scrolling is working
+	;user input to move road left or right
+	ld a, KEYBOARD_READ_PORT_SHIFT_TO_V			; read keyboard shift to v
+	in a, (KEYBOARD_READ_PORT)						; read from io port	
+	bit 2, a								; check bit set for key press right move "M"
+	jr z, roadleft
+
+	ld a, KEYBOARD_READ_PORT_SPACE_TO_B			; read keyboard shift to v
+	in a, (KEYBOARD_READ_PORT)						; read from io port	
+	bit 2, a
+	jr z, roadright
+	
+	jr printNewRoad
+	
+roadleft	
+; move road position to left
+	ld hl,(var_road_left_addr)
+	dec hl
+	ld (var_road_left_addr), hl	
+	ld a, (road_offset_from_edge)
+	dec a 
+	ld (road_offset_from_edge),a
+
+	cp 0
+	jp nz, printNewRoad   ; skip inc if it's not at edge otherwise inc 
+	inc a
+	ld (road_offset_from_edge),a
+	inc hl
+	ld (var_road_left_addr), hl
+
+	jr printNewRoad
+	
+roadright
+	ld hl,(var_road_left_addr)
+	inc hl
+	ld (var_road_left_addr), hl		
+	ld a, (road_offset_from_edge)
+	inc a 
+	ld (road_offset_from_edge),a
+	
+	cp 15
+	jp nz, printNewRoad   ; skip inc if it's not at edge otherwise inc 
+	dec a
+	ld (road_offset_from_edge),a
+	dec hl
+	ld (var_road_left_addr), hl
+
+printNewRoad
+	ld hl,(var_road_left_addr)	
+	ld a, (roadCharacter)	
+	ld (hl),a
+	inc hl
+	ld (hl),a
+	ld de,WIDTH_OF_ROAD
+	add hl,de
+	ld (hl),a
+	inc hl
+	ld (hl),a
+
+	;toggle road character to show if scrolling is working
 	xor a  ;print new road
 	ld a,(roadCharacterControl)
 	dec a
@@ -184,11 +241,11 @@ principalloop
 	ld a, 136
 	ld (roadCharacter), a
 	jp nz, preWaitloop
-	ld a, 2
+	ld a, 4
 	ld (roadCharacterControl), a
 	ld a, 128
 	ld (roadCharacter), a
-	jp principalloop
+	
 preWaitloop	
 	ld bc,$05ff ;max waiting time
 waitloop
