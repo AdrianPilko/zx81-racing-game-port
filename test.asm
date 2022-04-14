@@ -142,7 +142,6 @@ initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is bete
 	inc hl					
 	ld (hl),a
 	ld de,22  ;; on zx spectrum had ld de,21, but end of line on zx81 has chr$128 needs skip
-
 	add hl,de
 	djnz initialiseRoad	
 	
@@ -157,23 +156,11 @@ principalloop
 	;scroll road	
 	ld hl,(var_scroll_road_from)  ; load left road address	
 	ld de,(var_scroll_road_to) ; load right road address		
-	ld bc,737					; 736 = 32columns * 23 rows
+	ld bc,736					; 736 = 32columns * 23 rows
 	; LDDR repeats the instruction LDD (Does a LD (DE),(HL) and decrements 
 	; each of DE, HL, and BC) until BC=0. Note that if BC=0 before 
 	; the start of the routine, it will try loop around until BC=0 again.	
 	lddr
-
-	; erase old road
-	ld a, 0
-	ld hl,(var_road_left_addr)
-	ld (hl),a
-	inc hl
-	ld (hl),a
-	ld de,WIDTH_OF_ROAD
-	add hl,de
-	ld (hl),a
-	inc hl
-	ld (hl),a
 
 	;user input to move road left or right
 	ld a, KEYBOARD_READ_PORT_SHIFT_TO_V			; read keyboard shift to v
@@ -187,8 +174,20 @@ principalloop
 	jr z, roadright
 	
 	jr printNewRoad
-	
+
 roadleft	
+	; erase old road
+	ld a, 0
+	ld hl,(var_road_left_addr)
+	ld (hl),a
+	inc hl
+	ld (hl),a
+	ld de,WIDTH_OF_ROAD
+	add hl,de
+	ld (hl),a
+	inc hl
+	ld (hl),a
+	
 ; move road position to left
 	ld hl,(var_road_left_addr)
 	dec hl
@@ -196,7 +195,6 @@ roadleft
 	ld a, (road_offset_from_edge)
 	dec a 
 	ld (road_offset_from_edge),a
-
 	cp 0
 	jp nz, printNewRoad   ; skip inc if it's not at edge otherwise inc 
 	inc a
@@ -207,21 +205,34 @@ roadleft
 	jr printNewRoad
 	
 roadright
+	; erase old road
+	ld a, 0
+	ld hl,(var_road_left_addr)
+	ld (hl),a
+	inc hl
+	ld (hl),a
+	ld de,WIDTH_OF_ROAD
+	add hl,de
+	ld (hl),a
+	inc hl
+	ld (hl),a
+	
 	ld hl,(var_road_left_addr)
 	inc hl
 	ld (var_road_left_addr), hl		
 	ld a, (road_offset_from_edge)
 	inc a 
 	ld (road_offset_from_edge),a
-	
 	cp 15
 	jp nz, printNewRoad   ; skip inc if it's not at edge otherwise inc 
+
 	dec a
 	ld (road_offset_from_edge),a
 	dec hl
 	ld (var_road_left_addr), hl
 
 printNewRoad
+
 	ld hl,(var_road_left_addr)	
 	ld a, (roadCharacter)	
 	ld (hl),a
@@ -234,7 +245,7 @@ printNewRoad
 	ld (hl),a
 
 	;toggle road character to show if scrolling is working
-	xor a  ;print new road
+	xor a  
 	ld a,(roadCharacterControl)
 	dec a
 	ld (roadCharacterControl),a
@@ -254,6 +265,7 @@ waitloop
 	or c
 	jr nz, waitloop
 	jp principalloop
+	
 gameover
 	ret     ; game and tutorial written by Jon Kingsman
 
