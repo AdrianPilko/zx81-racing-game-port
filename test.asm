@@ -22,7 +22,6 @@
 #define ROAD_SCREEN_MEM_OFFSET 9    
 #define WIDTH_OF_ROAD 9
 #define CAR_SCREEN_MEM_START_OFFSET 772
-;#define SCREEN_MEM_OFFSET_TO_LAST_ROW 736
 #define ROADFROM_SCREEN_MEM_LOCATION 769
 #define ROADTO_SCREEN_MEM_LOCATION 778
 #define RANDOM_BYTES_MEM_LOCATION 2000
@@ -74,6 +73,8 @@ roadCharacter
 	DEFB 0
 roadCharacterControl
 	DEFB 0	
+crash_message_txt
+		DEFB	_Y,_O,_U,__,_C,_R,_A,_S,_H,_E,_D,$ff	
 
 to_print .equ to_print_mem ;use hprint16
 	
@@ -158,36 +159,35 @@ initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is bete
 	ld (hl),a
 	ld (var_car_pos),hl ;save car posn
 	di
-principalloop	
-	ld hl,(var_car_pos) ; load car pos
+principalloop
+	ld hl,(var_car_pos)							; get car position
+	
 	;user input to move road left or right	
-	
 	ld a, KEYBOARD_READ_PORT_SHIFT_TO_V			; read keyboard shift to v
-	in a, (KEYBOARD_READ_PORT)						; read from io port	
-	bit 2, a								; check bit set for key press right move "M"
-	jr z, carleft
+	in a, (KEYBOARD_READ_PORT)					; read from io port	
+	bit 2, a									; check bit set for key press left  (X)
+	jr z, carleft								; jump to move car left
+	ld a, KEYBOARD_READ_PORT_SPACE_TO_B			; read keyboard space to B
+	in a, (KEYBOARD_READ_PORT)					; read from io port	
+	bit 2, a									; check bit set for key press right (M)
+	jr z, carright								; jump to move car right
 	
-	ld a, KEYBOARD_READ_PORT_SPACE_TO_B			; read keyboard shift to v
-	in a, (KEYBOARD_READ_PORT)						; read from io port	
-	bit 2, a	
-	jr z, carright
-	
-	jr noCarMove
+	jr noCarMove								; dropped through to no move
 	
 carleft
-	dec hl
-	ld (var_car_pos), hl
+	dec hl	
 	jr noCarMove	
 carright
 	inc hl
-	ld (var_car_pos), hl
 noCarMove	
-	ld de, 32 ;new carposn
+	di
+	ld (var_car_pos), hl		
+	ld de, 32 
 	xor a  ;set carry flag to 0
 	sbc hl,de
 	ld a,(hl)
 	or a
-	;jp nz,gameover
+	jp nz,gameover
 	
 	ld a, CAR_CHARACTER_CODE
 	ld (hl),a
@@ -202,14 +202,14 @@ noCarMove
 	; the start of the routine, it will try loop around until BC=0 again.	
 	lddr
 
-	; got this random number gen from https://spectrumcomputing.co.uk/forums/viewtopic.php?t=4571
-    add hl,hl     ; 29    11
-    sbc a,a       ; 9F     4
-    and %00101101 ; E62D   7
-    xor l         ; AD     4
-    ld l,a        ; 6F     4
-    ld a,r        ; ED5F   9
-    add a,h       ; 84     4
+	; random number gen from https://spectrumcomputing.co.uk/forums/viewtopic.php?t=4571
+    add hl,hl    
+    sbc a,a      
+    and %00101101 
+    xor l         
+    ld l,a       
+    ld a,r       
+    add a,h     
 	
 	and 1
 	jr z, roadleft	
@@ -310,8 +310,27 @@ waitloop
 	jp principalloop
 	
 gameover
+	ld bc,1
+	ld de,crash_message_txt
+	call printstring
+	
 	ret     ; game and tutorial written by Jon Kingsman
 
+
+printstring
+	ld hl,(D_FILE)
+	add hl,bc	
+printstring_loop
+	ld a,(de)
+	cp $ff
+	jp z,printstring_end
+	ld (hl),a
+	inc hl
+	inc de
+	jr printstring_loop
+printstring_end	
+	ret
+	
 ;include our variables
 #include "vars.asm"
 
