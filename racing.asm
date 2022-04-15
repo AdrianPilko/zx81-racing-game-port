@@ -209,7 +209,7 @@ noCarMove
 	; each of DE, HL, and BC) until BC=0. Note that if BC=0 before 
 	; the start of the routine, it will try loop around until BC=0 again.	
 	lddr
-
+	
 	; random number gen from https://spectrumcomputing.co.uk/forums/viewtopic.php?t=4571
     add hl,hl    
     sbc a,a      
@@ -324,31 +324,11 @@ gameover
 	ld bc,1
 	ld de,crash_message_txt
 	call printstring
-	ld bc,1
-	ld de,score_txt
-	call printScore
-	ld a, (score_mem)	
-	add a, 28					; this doesn't work yet! needs to print on second line
-								; and print each number seperately!??
-	call PRINT
+	ld hl, (score_mem)	
+	call shwnum
 	ret     
 ; original game written by Jon Kingsman, for zx spectrum, ZX81 port/rework by Adrian Pilkington 
 
-printScore
-	ld hl,(D_FILE)
-	add hl,bc
-	ld bc, 32
-	add hl,bc		; add another 32 to put score on second line
-printScore_loop
-	ld a,(de)
-	cp $ff
-	jp z,printScore_end
-	ld (hl),a
-	inc hl
-	inc de
-	jr printScore_loop
-printScore_end	
-	ret
 
 printstring
 	ld hl,(D_FILE)
@@ -363,6 +343,36 @@ printstring_loop
 	jr printstring_loop
 printstring_end	
 	ret
+	
+; adapted from https://chuntey.wordpress.com/2013/09/08/how-to-write-zx-spectrum-games-chapter-10/
+; Show number passed in hl, right-justified.
+
+; doesn't work yet on zx81
+shwnum 
+	   ld a,32             ; leading zeroes (or spaces).
+       ld de,10000         ; ten thousands column.
+       call shwdg          ; show digit.
+       ld de,1000          ; thousands column.
+       call shwdg          ; show digit.
+       ld de,100           ; hundreds column.
+       call shwdg          ; show digit.
+       ld de,10            ; tens column.
+       call shwdg          ; show digit.
+       or 16               ; last digit is always shown.
+       ld de,1             ; units column.
+shwdg  
+	   and 48              ; clear carry, clear digit.
+shwdg1 
+	   sbc hl,de           ; subtract from column.
+       jr c,shwdg0         ; nothing to show.
+       or 16               ; something to show, make it a digit.
+       inc a               ; increment digit.
+       jr shwdg1           ; repeat until column is zero.
+shwdg0 
+	   add hl,de           ; restore total.
+       ld a, h
+	   call PRINT       
+       ret	
 	
 ;include our variables
 #include "vars.asm"
