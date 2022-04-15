@@ -23,8 +23,7 @@
 #define COL_IN_SCREEN 32
 #define ROAD_SCREEN_MEM_OFFSET 9    
 #define WIDTH_OF_ROAD 9
-#define CAR_SCREEN_MEM_START_OFFSET 773
-;#define SCREEN_MEM_OFFSET_TO_LAST_ROW 736
+#define CAR_SCREEN_MEM_START_OFFSET 772
 #define ROADFROM_SCREEN_MEM_LOCATION 769
 #define ROADTO_SCREEN_MEM_LOCATION 778
 #define RANDOM_BYTES_MEM_LOCATION 2000
@@ -36,7 +35,7 @@
 ; probably should run some code to detect if this is 1K or 16K as well, or just have 2 verisons 1K and 16K
 #define D_FILE 16396
 ;black block
-#define CAR_CHARACTER_CODE 128  
+#define CAR_CHARACTER_CODE 138  
 ;blank space
 #define NOT_CAR_CHARACTER_CODE 0
 ;blank space
@@ -70,17 +69,23 @@ var_scroll_road_to
 	DEFB 0,0
 to_print_mem
 	DEFB 0,0
-	
+road_offset_from_edge	
+	DEFB 0
+roadCharacter
+	DEFB 0
+roadCharacterControl
+	DEFB 0	
 crash_message_txt
-		DEFB	_Y,_O,_U,__,_C,_R,_A,_S,_H,_E,_D,$ff
-game_title_txt
-		DEFB	__,__,_D,_E,_A,_T,_H,__,__,__,__,__,__,__,__,__,__,__,__,__,__,_R,_A,_C,_E,__,__,__,__,__,$ff
-		
+		DEFB	__,__,__,__,_H,_I,_T,__,_E,_D,_G,_E,__,_O,_F,__,_R,_O,_A,_D,__,_A,_N,_D,__,_K,_I,_L,_L,_E,_D,$ff	
+score_txt
+		DEFB	_S,_C,_O,_R,_E,__,$ff			
+score_mem
+	DEFB 0,0
+	
 to_print .equ to_print_mem ;use hprint16
 	
 
 hprint16  ; print one 2byte number stored in location $to_print
-	;ld hl,$to_print
 	ld hl,$to_print+2
 	ld b,2	
 hprint16_loop	
@@ -110,11 +115,13 @@ hprint16_loop
 
 main
 	call CLS	
+
+	ld hl, 0						; initialise score to zero
+	ld (score_mem),hl
 	
-	;ld bc,1
-	;ld de,game_title_txt
-	;call printGameBannerString
-		
+	ld a,9
+	ld (road_offset_from_edge),a
+	
 	;; initialise the scroll from and too, 
 	;; scroll from is the D_FILE+(cols*(rows-1)-1
 	;; scroll to is the D_FILE + (cols*rows)-1     (= scroll from + 32)
@@ -129,72 +136,70 @@ main
 	ld hl,(D_FILE) ;initialise road start memory address
 	ld de, ROAD_SCREEN_MEM_OFFSET
 	add hl, de	
-	xor a  ;???? possibly clears cpu flags?
-	ld a, ROAD_CHARACTER_CODE
-	ld b,ROWS_IN_SCREEN
-	
+	ld (var_road_left_addr),hl ; store initial road left pos at top left of screen
+
+	ld a, 136
+	ld b,23 ; for this debug version do half and alternate pattern to see scroll
 initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is beter name of what it's doing!!
+	
 	ld (hl),a    ;; road starts as two staight vertical lines 
 	inc hl   	 ;; make each edge of road 2 characters wide
 	ld (hl),a   	
-	ld (var_road_left_addr),hl ; store road left pos (every time but on last iteration will be correct for last row	
 	ld de,WIDTH_OF_ROAD   
 	add hl,de			  ;; add offset to get to other side of road	
-	ld (var_road_right_addr),hl ; store road right pos (every time but on last iteration will be correct for last row
 	ld (hl),a				;; make each edge of road 2 characters wide
 	inc hl					
 	ld (hl),a
-	ld de,22  ;; on zx spectrum had ld de,21
+	ld de,22  ;; on zx spectrum had ld de,21, but end of line on zx81 has chr$128 needs skip
 	add hl,de
 	djnz initialiseRoad	
-
-	ld b,ROWS_IN_SCREEN
-	;ld c,b  ;initialise score
-	;push bc  ;save score
 	
-	ld hl,(D_FILE) ;initialise car
+	ld a, 136
+	ld (roadCharacter), a
+	ld a, 2
+	ld (roadCharacterControl), a
+
+;initialise car	
+	ld hl,(D_FILE) 
 	ld de, CAR_SCREEN_MEM_START_OFFSET
-	add hl, de
+	add hl, de	
 	ld a,CAR_CHARACTER_CODE 
 	ld (hl),a
 	ld (var_car_pos),hl ;save car posn
-	
-principalloop
-	ld hl,(var_car_pos)						;retrieve car posn
-	ld a,NOT_CAR_CHARACTER_CODE  					;erase car
-	ld (hl),a
-	
-	ld a, KEYBOARD_READ_PORT_SHIFT_TO_V			; read keyboard shift to v
-	in a, (KEYBOARD_READ_PORT)						; read from io port	
-	bit 2, a								; check bit set for key press right move "M"
-
-	jr nz, moveright
-	dec l
-
-moveright
-	ld a, KEYBOARD_READ_PORT_SPACE_TO_B			; read keyboard shift to v
-	in a, (KEYBOARD_READ_PORT)						; read from io port	
-	bit 2, a								; check bit set for key press right move "M"
-
-	jr nz, dontmove	
-	inc l
-	
-dontmove
 	di
-	ld (var_car_pos),hl ; store new car pos			
-	ld de, 32 ;new carposn
+principalloop
+	ld hl,(var_car_pos)							; get car position
+	
+	;user input to move road left or right	
+	ld a, KEYBOARD_READ_PORT_SHIFT_TO_V			; read keyboard shift to v
+	in a, (KEYBOARD_READ_PORT)					; read from io port	
+	bit 2, a									; check bit set for key press left  (X)
+	jr z, carleft								; jump to move car left
+	ld a, KEYBOARD_READ_PORT_SPACE_TO_B			; read keyboard space to B
+	in a, (KEYBOARD_READ_PORT)					; read from io port	
+	bit 2, a									; check bit set for key press right (M)
+	jr z, carright								; jump to move car right
+	
+	jr noCarMove								; dropped through to no move
+	
+carleft
+	dec hl	
+	jr noCarMove	
+carright
+	inc hl
+noCarMove	
+	di
+	ld (var_car_pos), hl		
+	ld de, 32 
 	xor a  ;set carry flag to 0
 	sbc hl,de
-	ld a,(hl) ;crash?
-	or a	
-	jp z,gameover
-
-	ei
-	ld hl, (var_car_pos)
-	ld a,CAR_CHARACTER_CODE 
-	ld (hl),a	
-		
-	jp preWaitloop		; cut next bit for debug to get car moving left right	
+	ld a,(hl)
+	or a
+	jp nz,gameover
+	
+	ld a, CAR_CHARACTER_CODE
+	ld (hl),a
+	
 	
 	;scroll road	
 	ld hl,(var_scroll_road_from)  ; load left road address	
@@ -203,50 +208,28 @@ dontmove
 	; LDDR repeats the instruction LDD (Does a LD (DE),(HL) and decrements 
 	; each of DE, HL, and BC) until BC=0. Note that if BC=0 before 
 	; the start of the routine, it will try loop around until BC=0 again.	
-	lddr	
-	
-	;pop bc  ;retrieve score
-	ld hl,(var_road_left_addr) ; get road position
-	ld a,NOT_ROAD_CHARACTER_CODE  ;delete old road
-	ld (hl),a
-	inc hl
-	ld (hl),a
-	ld de,WIDTH_OF_ROAD 
-	add hl,de
-	ld (hl),a
-	inc hl
-	ld (hl),a
+	lddr
 
+	; random number gen from https://spectrumcomputing.co.uk/forums/viewtopic.php?t=4571
+    add hl,hl    
+    sbc a,a      
+    and %00101101 
+    xor l         
+    ld l,a       
+    ld a,r       
+    add a,h     
 	
-	;random road left or right
-	ld hl,RANDOM_BYTES_MEM_LOCATION ;source of random bytes in ROM
-	ld d,0
-	ld e,c
-	add hl, de
-	ld a,(hl)
-	ld (var_road_left_addr),hl
-	dec hl  ;move road posn 1 left
 	and 1
-	jr z, roadleft
-	inc hl
-	inc hl
+	jr z, roadleft	
+	
+	jr roadright
+	
+	jr printNewRoad 
 
-roadleft
-	ld a,l  ;check left
-	cp 255
-	jr nz, checkright
-	inc hl
-	inc hl
-checkright
-	ld a,l
-	cp 21
-	jr nz, newroadposn
-	dec hl
-	dec hl
-newroadposn
-	;ld (var_road_left_addr),hl
-	xor a  ;print new road
-	ld a, ROAD_CHARACTER_CODE
+roadleft	
+	; erase old road
+	ld a, 0
+	ld hl,(var_road_left_addr)
 	ld (hl),a
 	inc hl
 	ld (hl),a
@@ -255,10 +238,80 @@ newroadposn
 	ld (hl),a
 	inc hl
 	ld (hl),a
-	;inc bc  ;add 1 to score
-	;push bc  ;save score
-	;wait routine		
-preWaitloop	
+	
+; move road position to left
+	ld hl,(var_road_left_addr)
+	dec hl
+	ld (var_road_left_addr), hl	
+	ld a, (road_offset_from_edge)
+	dec a 
+	ld (road_offset_from_edge),a
+	cp 0
+	jp nz, printNewRoad   ; skip inc if it's not at edge otherwise inc 
+	inc a
+	ld (road_offset_from_edge),a
+	inc hl
+	ld (var_road_left_addr), hl
+
+	jr printNewRoad
+	
+roadright
+	; erase old road
+	ld a, 0
+	ld hl,(var_road_left_addr)
+	ld (hl),a
+	inc hl
+	ld (hl),a
+	ld de,WIDTH_OF_ROAD
+	add hl,de
+	ld (hl),a
+	inc hl
+	ld (hl),a
+	
+	ld hl,(var_road_left_addr)
+	inc hl
+	ld (var_road_left_addr), hl		
+	ld a, (road_offset_from_edge)
+	inc a 
+	ld (road_offset_from_edge),a
+	cp 21
+	jp nz, printNewRoad   ; skip inc if it's not at edge otherwise inc 
+
+	dec a
+	ld (road_offset_from_edge),a
+	dec hl
+	ld (var_road_left_addr), hl
+
+printNewRoad
+
+	ld hl,(var_road_left_addr)	
+	ld a, (roadCharacter)	
+	ld (hl),a
+	inc hl
+	ld (hl),a
+	ld de,WIDTH_OF_ROAD
+	add hl,de
+	ld (hl),a
+	inc hl
+	ld (hl),a
+
+	;toggle road character to show if scrolling is working
+	xor a  
+	ld a,(roadCharacterControl)
+	dec a
+	ld (roadCharacterControl),a
+	ld a, 136
+	ld (roadCharacter), a
+	jp nz, preWaitloop
+	ld a, 4
+	ld (roadCharacterControl), a
+	ld a, 128
+	ld (roadCharacter), a
+	
+preWaitloop
+	ld hl,(score_mem)
+	inc hl
+	ld (score_mem),hl
 	ld bc,$05ff ;max waiting time
 waitloop
 	dec bc
@@ -266,44 +319,36 @@ waitloop
 	or c
 	jr nz, waitloop
 	jp principalloop
+	
 gameover
 	ld bc,1
 	ld de,crash_message_txt
 	call printstring
-	pop bc  ;retrieve score
-	pop hl  ;empty stack
+	ld bc,1
+	ld de,score_txt
+	call printScore
+	ld a, (score_mem)	
+	add a, 28					; this doesn't work yet! needs to print on second line
+								; and print each number seperately!??
+	call PRINT
+	ret     
+; original game written by Jon Kingsman, for zx spectrum, ZX81 port/rework by Adrian Pilkington 
 
-	ret     ; game and tutorial written by Jon Kingsman
-
-fill_screen_with_char    ; adapted from http://swensont.epizy.com/ZX81Assembly.pdf screen1
-	ld hl,(D_FILE) ; Get start of display
-	ld c,22 ; line counter (22 lines)
-loop1
-	inc hl ; get past EOL
-	ld b,32 ; character counter (32 rows)
-loop2 
-	ld (HL),GREY_SQAURE ; print grey square character
-	inc hl ; move to next print position
-	djnz loop2 ; Do it again until B=0
-	dec c ; next line
-	jr nz,loop1
-	ret 
-
-print_to_screen_at    ; adapted from http://swensont.epizy.com/ZX81Assembly.pdf screen1
-	ld hl,(D_FILE) ; Get start of display
-	ld c,22 ; line counter (22 lines)
-Ploop1
-	inc hl ; get past EOL
-	ld b,32 ; character counter (32 rows)
-Ploop2 
-	ld (HL),$08 ; print grey square character
-	inc hl ; move to next print position
-	djnz Ploop2 ; Do it again until B=0
-	dec c ; next line
-	jr nz,Ploop1
-	ret 	
-
-	
+printScore
+	ld hl,(D_FILE)
+	add hl,bc
+	ld bc, 32
+	add hl,bc		; add another 32 to put score on second line
+printScore_loop
+	ld a,(de)
+	cp $ff
+	jp z,printScore_end
+	ld (hl),a
+	inc hl
+	inc de
+	jr printScore_loop
+printScore_end	
+	ret
 
 printstring
 	ld hl,(D_FILE)
@@ -317,20 +362,6 @@ printstring_loop
 	inc de
 	jr printstring_loop
 printstring_end	
-	ret
-
-printGameBannerString
-	ld hl,(D_FILE)
-	add hl,bc	
-printGameBannerString_loop
-	ld a,(de)
-	cp $ff
-	jp z,printGameBannerString_end
-	ld (hl),a
-	inc hl
-	inc de
-	jr printGameBannerString_loop
-printGameBannerString_end	
 	ret
 	
 ;include our variables

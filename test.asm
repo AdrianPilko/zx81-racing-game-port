@@ -74,13 +74,16 @@ roadCharacter
 roadCharacterControl
 	DEFB 0	
 crash_message_txt
-		DEFB	_Y,_O,_U,__,_C,_R,_A,_S,_H,_E,_D,$ff	
-
+		DEFB	_H,_I,_T,__,_E,_D,_G,_E,__,_O,_F,__,_R,_O,_A,_D,__,_A,_N,_D,__,_K,_I,_L,_L,_E,_D,$ff	
+score_txt
+		DEFB	_S,_C,_O,_R,_E,__,$ff			
+score_mem
+	DEFB 0,0
+	
 to_print .equ to_print_mem ;use hprint16
 	
 
 hprint16  ; print one 2byte number stored in location $to_print
-	;ld hl,$to_print
 	ld hl,$to_print+2
 	ld b,2	
 hprint16_loop	
@@ -111,6 +114,9 @@ hprint16_loop
 main
 	call CLS	
 
+	ld hl, 0						; initialise score to zero
+	ld (score_mem),hl
+	
 	ld a,9
 	ld (road_offset_from_edge),a
 	
@@ -300,8 +306,12 @@ printNewRoad
 	ld a, 128
 	ld (roadCharacter), a
 	
-preWaitloop	
-	ld bc,$09ff ;max waiting time
+preWaitloop
+	ld hl,(score_mem)
+	inc hl
+	ld (score_mem),hl
+	
+	ld bc,$03ff ;max waiting time
 waitloop
 	dec bc
 	ld a,b
@@ -313,9 +323,31 @@ gameover
 	ld bc,1
 	ld de,crash_message_txt
 	call printstring
-	
-	ret     ; game and tutorial written by Jon Kingsman
+	ld bc,1
+	ld de,score_txt
+	call printScore
+	ld a, (score_mem)	
+	add a, 28					; this doesn't work yet! needs to print on second line
+								; and print each number seperately!??
+	call PRINT
+	ret     
+; original game written by Jon Kingsman, for zx spectrum, ZX81 port/rework by Adrian Pilkington 
 
+printScore
+	ld hl,(D_FILE)
+	add hl,bc
+	ld bc, 32
+	add hl,bc		; add another 32 to put score on second line
+printScore_loop
+	ld a,(de)
+	cp $ff
+	jp z,printScore_end
+	ld (hl),a
+	inc hl
+	inc de
+	jr printScore_loop
+printScore_end	
+	ret
 
 printstring
 	ld hl,(D_FILE)
