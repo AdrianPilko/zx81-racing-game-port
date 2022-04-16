@@ -85,6 +85,13 @@ title_screen_txt
 	DEFB	_Z,_X,_8,_1,__,_R,_A,_C,_I,_N,_G,__,__,__,__,__,__,$ff
 keys_screen_txt
 	DEFB	_S,__,_T,_O,__,_S,_T,_A,_R,_T,26,__,_Z,__,_L,_E,_F,_T,26,__,_M,__,_R,_I,_G,_H,_T,$ff
+warning_message_line_1
+	DEFB	_W,_A,_R,_N,_I,_N,_G,$ff			
+warning_message_line_2
+	DEFB	_C,_A,_R,__,_H,_A,_S,__,_A,__,_F,_A,_U,_L,_T,$ff
+warning_message_line_3
+	DEFB    _I,_T,__,_W,_I,_L,_L,__,_P,_U,_L,_L,__,_T,_O,__,_R,_I,_G,_H,_T,__,_A,_T,__,_S,_T,_A,_R,_T,$ff				
+	
 chequrered_flag		
 	DEFB	6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,$ff		
 test_str		
@@ -160,12 +167,22 @@ intro_title
 	ld bc,202
 	ld de,keys_screen_txt
 	call printstring	
+	ld bc,331
+	ld de,warning_message_line_1
+	call printstring	
+	ld bc,364
+	ld de,warning_message_line_2
+	call printstring	
+	ld bc,397
+	ld de,warning_message_line_3
+	call printstring	
 	ld bc,727
 	ld de,chequrered_flag
 	call printstring		
 	ld bc,760
 	ld de,chequrered_flag
 	call printstring	
+
 read_start_key
 	ld a, KEYBOARD_READ_PORT_A_TO_G	
 	in a, (KEYBOARD_READ_PORT)					; read from io port	
