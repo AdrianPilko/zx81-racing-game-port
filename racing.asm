@@ -50,10 +50,12 @@
 #define KEYBOARD_READ_PORT_SHIFT_TO_V $FE
 ; keyboard space to b
 #define KEYBOARD_READ_PORT_SPACE_TO_B $7F 
+#define KEYBOARD_READ_PORT_A_TO_G	$FD
 ; starting port numbner for keyboard, is same as first port for shift to v
 #define KEYBOARD_READ_PORT $FE 
 
-	jp main
+	jp intro_title
+	;jp main
 
 var_car_pos 
 	DEFB 0,0
@@ -76,9 +78,15 @@ roadCharacter
 roadCharacterControl
 	DEFB 0	
 crash_message_txt
-		DEFB	__,__,__,__,_H,_I,_T,__,_E,_D,_G,_E,__,_O,_F,__,_R,_O,_A,_D,__,_A,_N,_D,__,_K,_I,_L,_L,_E,_D,$ff	
+	DEFB	_G,_A,_M,_E,__,_O,_V,_E,_R,$ff	
 score_txt
-		DEFB	_S,_C,_O,_R,_E,__,$ff			
+	DEFB	_S,_C,_O,_R,_E,__,$ff
+title_screen_txt
+	DEFB	_Z,_X,_8,_1,__,_R,_A,_C,_I,_N,_G,__,__,__,__,__,__,$ff
+keys_screen_txt
+	DEFB	_S,__,_T,_O,__,_S,_T,_A,_R,_T,__,__,_Z,__,_L,_E,_F,_T,__,__,_M,__,_R,_I,_G,_H,_T,$ff
+chequrered_flag		
+	DEFB	6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,$ff		
 score_mem
 	DEFB 0,0
 	
@@ -86,7 +94,7 @@ to_print .equ to_print_mem ;use hprint16
 	
 
 hprint16  ; print one 2byte number stored in location $to_print
-	ld hl,$to_print+2
+	ld hl,$to_print
 	ld b,2	
 hprint16_loop	
 	ld a, (hl)
@@ -102,20 +110,41 @@ hprint16_loop
 	and $0f ; isolate the second digit
 	add a,$1c ; add 28 to the character code
 	call PRINT
-	ld a, 00;_NL ;print new line ; 00 is space
-	;call PRINT ; print a space character
-	
-	dec hl
+	inc hl
 	djnz hprint16_loop
-	; restore registers
-	ld a, _NL
-	call PRINT
 	ret
 
+introWaitLoop
+	ld bc,$00ff ;max waiting time
+introWaitLoop_1
+	dec bc
+	ld a,b
+	or c
+	jr nz, introWaitLoop_1
+	jr read_start_key
+
+
+intro_title
+	di
+	call CLS
+	
+	ld bc,1
+	ld de,chequrered_flag
+	call printstring	
+	ld bc,78
+	ld de,title_screen_txt
+	call printstring
+	ld bc,202
+	ld de,keys_screen_txt
+	call printstring	
+read_start_key
+	ld a, KEYBOARD_READ_PORT_A_TO_G	
+	in a, (KEYBOARD_READ_PORT)					; read from io port	
+	bit 1, a									; check S key pressed
+	jr nz, introWaitLoop
 
 main
-	call CLS	
-
+	call CLS
 	ld hl, 0						; initialise score to zero
 	ld (score_mem),hl
 	
@@ -166,14 +195,14 @@ initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is bete
 	ld a,CAR_CHARACTER_CODE 
 	ld (hl),a
 	ld (var_car_pos),hl ;save car posn
-	di
+
 principalloop
 	ld hl,(var_car_pos)							; get car position
 	
 	;user input to move road left or right	
 	ld a, KEYBOARD_READ_PORT_SHIFT_TO_V			; read keyboard shift to v
 	in a, (KEYBOARD_READ_PORT)					; read from io port	
-	bit 2, a									; check bit set for key press left  (X)
+	bit 1, a									; check bit set for key press left  (Z)
 	jr z, carleft								; jump to move car left
 	ld a, KEYBOARD_READ_PORT_SPACE_TO_B			; read keyboard space to B
 	in a, (KEYBOARD_READ_PORT)					; read from io port	
@@ -309,10 +338,11 @@ printNewRoad
 	ld (roadCharacter), a
 	
 preWaitloop
-	ld hl,(score_mem)
+	ld hl,(score_mem)				; add one to score
 	inc hl
 	ld (score_mem),hl
-	ld bc,$05ff ;max waiting time
+	
+	ld bc,$05ff 					;max waiting time
 waitloop
 	dec bc
 	ld a,b
@@ -321,15 +351,19 @@ waitloop
 	jp principalloop
 	
 gameover
-	ld bc,1
+	ld bc,10
 	ld de,crash_message_txt
 	call printstring
-	ld hl, (score_mem)	
-	call shwnum
+	ld hl, score_mem	; copy from score memory location to "print buffer"
+	ld de, to_print		;
+	ld bc, 2			; 2 bytes
+	ldir				; copy 2 bytes from hl to de	
+	call hprint16 		; print 
 	ret     
 ; original game written by Jon Kingsman, for zx spectrum, ZX81 port/rework by Adrian Pilkington 
 
 
+; this prints at top any offset (stored in bc) from the top of the screen D_FILE
 printstring
 	ld hl,(D_FILE)
 	add hl,bc	
