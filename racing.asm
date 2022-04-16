@@ -84,13 +84,32 @@ score_txt
 title_screen_txt
 	DEFB	_Z,_X,_8,_1,__,_R,_A,_C,_I,_N,_G,__,__,__,__,__,__,$ff
 keys_screen_txt
-	DEFB	_S,__,_T,_O,__,_S,_T,_A,_R,_T,__,__,_Z,__,_L,_E,_F,_T,__,__,_M,__,_R,_I,_G,_H,_T,$ff
+	DEFB	_S,__,_T,_O,__,_S,_T,_A,_R,_T,26,__,_Z,__,_L,_E,_F,_T,26,__,_M,__,_R,_I,_G,_H,_T,$ff
 chequrered_flag		
 	DEFB	6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,$ff		
+test_str		
+	DEFB	6,$ff			
 score_mem
 	DEFB 0,0
 	
 to_print .equ to_print_mem ;use hprint16
+
+;; note on the zx81 display 
+; from previous crashes and experimenting with printing characters to the screen;; 
+; and also some forums, it's clear that the zx81 has 32 column* 24 rows of printable/addressable
+; screen area, but at the end of each row is is a chr$127, which if overritten
+;; can cazuse unpredictable behavoir and system instabiltiy . It also menas calculating 
+;; addresses/offsets to print to is not as straightforward as say c64
+;; printing to very last column and row, is 32col * 24row + (24"end of lines" - 1)
+;; printing to [row][col], use col
+;;
+;; 1k is different to 16K, on 1K system saves space by putting "end of row markers" ch$127
+;; on every line until there is something else on it. 16K preallocates whole display
+;; 16K zx81 offsets from D_FILE
+;; 1  = top row, first column 
+;; 32 = top right, last column
+;; 760 = bottom row, first column
+;; 791 = bottom row, last column
 	
 
 hprint16  ; print one 2byte number stored in location $to_print
@@ -129,7 +148,8 @@ intro_title
 	call CLS
 	
 	ld bc,1
-	ld de,chequrered_flag
+	;ld de,chequrered_flag
+	ld de,test_str
 	call printstring	
 	ld bc,78
 	ld de,title_screen_txt
@@ -137,6 +157,16 @@ intro_title
 	ld bc,202
 	ld de,keys_screen_txt
 	call printstring	
+	ld bc,32
+	ld de,test_str
+	call printstring	
+	
+	ld bc,760
+	ld de,test_str
+	call printstring		
+	ld bc,791
+	ld de,test_str
+	call printstring			
 read_start_key
 	ld a, KEYBOARD_READ_PORT_A_TO_G	
 	in a, (KEYBOARD_READ_PORT)					; read from io port	
@@ -224,7 +254,7 @@ noCarMove
 	sbc hl,de
 	ld a,(hl)
 	or a
-	jp nz,gameover
+	;jp nz,gameover
 	
 	ld a, CAR_CHARACTER_CODE
 	ld (hl),a
