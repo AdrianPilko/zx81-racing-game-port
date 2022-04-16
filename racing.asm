@@ -90,8 +90,10 @@ chequrered_flag
 test_str		
 	DEFB	6,$ff			
 score_mem
+	DEFB 0,0	
+speedUpLevelCounter	
 	DEFB 0,0
-	
+		
 to_print .equ to_print_mem ;use hprint16
 
 ;; note on the zx81 display 
@@ -101,7 +103,8 @@ to_print .equ to_print_mem ;use hprint16
 ;; can cazuse unpredictable behavoir and system instabiltiy . It also menas calculating 
 ;; addresses/offsets to print to is not as straightforward as say c64
 ;; printing to very last column and row, is 32col * 24row + (24"end of lines" - 1)
-;; printing to [row][col], use col
+;; printing to [row][col], use (row * 33) + col, 
+;; (row is 0 to 23 for addressing purposes, and column 1 to 32)
 ;;
 ;; 1k is different to 16K, on 1K system saves space by putting "end of row markers" ch$127
 ;; on every line until there is something else on it. 16K preallocates whole display
@@ -144,29 +147,25 @@ introWaitLoop_1
 
 
 intro_title
-	di
 	call CLS
-	
 	ld bc,1
-	;ld de,chequrered_flag
-	ld de,test_str
+	ld de,chequrered_flag
 	call printstring	
-	ld bc,78
+	ld bc,34
+	ld de,chequrered_flag
+	call printstring		
+	ld bc,110
 	ld de,title_screen_txt
 	call printstring
 	ld bc,202
 	ld de,keys_screen_txt
 	call printstring	
-	ld bc,32
-	ld de,test_str
-	call printstring	
-	
-	ld bc,760
-	ld de,test_str
+	ld bc,727
+	ld de,chequrered_flag
 	call printstring		
-	ld bc,791
-	ld de,test_str
-	call printstring			
+	ld bc,760
+	ld de,chequrered_flag
+	call printstring	
 read_start_key
 	ld a, KEYBOARD_READ_PORT_A_TO_G	
 	in a, (KEYBOARD_READ_PORT)					; read from io port	
@@ -177,6 +176,10 @@ main
 	call CLS
 	ld hl, 0						; initialise score to zero
 	ld (score_mem),hl
+
+	ld bc, $09ff					; set initial difficulty
+	ld (speedUpLevelCounter), bc
+	ld bc,0
 	
 	ld a,9
 	ld (road_offset_from_edge),a
@@ -246,15 +249,14 @@ carleft
 	jr noCarMove	
 carright
 	inc hl
-noCarMove	
-	di
+noCarMove		
 	ld (var_car_pos), hl		
 	ld de, 32 
 	xor a  ;set carry flag to 0
 	sbc hl,de
 	ld a,(hl)
 	or a
-	;jp nz,gameover
+	jp nz,gameover
 	
 	ld a, CAR_CHARACTER_CODE
 	ld (hl),a
@@ -372,7 +374,27 @@ preWaitloop
 	inc hl
 	ld (score_mem),hl
 	
-	ld bc,$05ff 					;max waiting time
+	;;ld bc,$05ff 					;max waiting time
+	ld hl, (speedUpLevelCounter)   ; makes it more difficult as you progress
+	ld a, h
+	cp $ff
+	jr z, waitloop_set_min
+	dec hl 
+	ld a, h
+	cp $ff
+	jr z, waitloop_set_min	
+	dec hl
+	ld a, h
+	cp $ff
+	jr z, waitloop_set_min	
+	dec hl
+	ld (speedUpLevelCounter), hl
+	ld bc, (speedUpLevelCounter)
+	jr waitloop
+waitloop_set_min
+	ld hl, $00ff
+	ld (speedUpLevelCounter), hl
+	ld bc, (speedUpLevelCounter)
 waitloop
 	dec bc
 	ld a,b
@@ -389,7 +411,21 @@ gameover
 	ld bc, 2			; 2 bytes
 	ldir				; copy 2 bytes from hl to de	
 	call hprint16 		; print 
-	ret     
+
+	ld hl, $ffff   ;; wait max time for 16bits then go back to intro
+	ld (speedUpLevelCounter), hl
+	ld bc, (speedUpLevelCounter)
+waitloop_end_game
+	dec bc
+	ld a,b
+	or c
+	jr nz, waitloop_end_game
+	jp intro_title
+	
+	;ret  ; never return to basic
+	
+	
+	
 ; original game written by Jon Kingsman, for zx spectrum, ZX81 port/rework by Adrian Pilkington 
 
 
@@ -407,36 +443,6 @@ printstring_loop
 	jr printstring_loop
 printstring_end	
 	ret
-	
-; adapted from https://chuntey.wordpress.com/2013/09/08/how-to-write-zx-spectrum-games-chapter-10/
-; Show number passed in hl, right-justified.
-
-; doesn't work yet on zx81
-shwnum 
-	   ld a,32             ; leading zeroes (or spaces).
-       ld de,10000         ; ten thousands column.
-       call shwdg          ; show digit.
-       ld de,1000          ; thousands column.
-       call shwdg          ; show digit.
-       ld de,100           ; hundreds column.
-       call shwdg          ; show digit.
-       ld de,10            ; tens column.
-       call shwdg          ; show digit.
-       or 16               ; last digit is always shown.
-       ld de,1             ; units column.
-shwdg  
-	   and 48              ; clear carry, clear digit.
-shwdg1 
-	   sbc hl,de           ; subtract from column.
-       jr c,shwdg0         ; nothing to show.
-       or 16               ; something to show, make it a digit.
-       inc a               ; increment digit.
-       jr shwdg1           ; repeat until column is zero.
-shwdg0 
-	   add hl,de           ; restore total.
-       ld a, h
-	   call PRINT       
-       ret	
 	
 ;include our variables
 #include "vars.asm"
