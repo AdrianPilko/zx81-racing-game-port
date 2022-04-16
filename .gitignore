@@ -1,13 +1,5 @@
-
-fib.lst
-fib.p 
-fib.sym
-fib.wav
-racing.p
+*.wav
 *.sym
-racing.lst
-test.lst
 test.p
 *.lst
-*.lst
-*.p
+
