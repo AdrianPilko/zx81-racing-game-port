@@ -109,7 +109,7 @@ to_print .equ to_print_mem ;use hprint16
 ;; printing to [row][col], use (row * 33) + col, 
 ;; (row is 0 to 23 for addressing purposes, and column 1 to 32)
 ;;
-;; 1k is different to 16K, on 1K system saves space by putting "end of row markers" ch$127
+;; 1k is different to 16K, on 1K system saves space by putting "end of row markers" chr$127
 ;; on every line until there is something else on it. 16K preallocates whole display
 ;; 16K zx81 offsets from D_FILE
 ;; 1  = top row, first column 
