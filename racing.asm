@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;
-;;; port of a racing game from zx spectrum code by Jon Kingsman by Adrian Pilkington
-;;; have added some bit like a message if/when you crash, and changed the collision detection
+;;; port of a racing game from zx spectrum code by Jon Kingsman 
+;;; reworked for zx81 by Adrian Pilkington, and added title screen etc
 ;;; which didn't appear to work on the zx81
 ;;;;;;;;;;;;;;;;;;;;;
 
