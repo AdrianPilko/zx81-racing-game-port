@@ -43,7 +43,6 @@
 ;black grey block
 #define ROAD_CHARACTER_CODE 136
 #define ROAD_START_MARKER_CHARACTER_CODE 138
-
 #define GREY_SQAURE 8  
 
 ; keyboard port for shift key to v
@@ -55,14 +54,11 @@
 #define KEYBOARD_READ_PORT $FE 
 
 	jp intro_title
-	;jp main
 
 var_car_pos 
 	DEFB 0,0
 var_road_left_addr
 	DEFB 0,0
-var_road_right_addr
-	DEFB 0,0	
 var_road_pos
 	DEFB 0,0
 var_scroll_road_from
