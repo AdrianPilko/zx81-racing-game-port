@@ -80,12 +80,8 @@ title_screen_txt
 	DEFB	_Z,_X,_8,_1,__,_R,_A,_C,_I,_N,_G,__,__,__,__,__,__,$ff
 keys_screen_txt
 	DEFB	_S,__,_T,_O,__,_S,_T,_A,_R,_T,26,__,_Z,__,_L,_E,_F,_T,26,__,_M,__,_R,_I,_G,_H,_T,$ff
-warning_message_line_1
-	DEFB	_W,_A,_R,_N,_I,_N,_G,$ff			
-warning_message_line_2
-	DEFB	_C,_A,_R,__,_H,_A,_S,__,_A,__,_F,_A,_U,_L,_T,$ff
-warning_message_line_3
-	DEFB    _I,_T,__,_W,_I,_L,_L,__,_P,_U,_L,_L,__,_T,_O,__,_R,_I,_G,_H,_T,__,_A,_T,__,_S,_T,_A,_R,_T,$ff				
+intro_message
+	DEFB    _P,_I,_T,__,_C,_R,_E,_W,__,_S,_A,_Y,__,_C,_A,_R,__,_I,_S,__,_P,_E,_R,_F,_E,_C,_T,__,__,__,$ff				
 	
 chequrered_flag		
 	DEFB	6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,$ff		
@@ -165,13 +161,7 @@ intro_title
 	ld de,keys_screen_txt
 	call printstring	
 	ld bc,331
-	ld de,warning_message_line_1
-	call printstring	
-	ld bc,364
-	ld de,warning_message_line_2
-	call printstring	
-	ld bc,397
-	ld de,warning_message_line_3
+	ld de,intro_message
 	call printstring	
 	ld bc,727
 	ld de,chequrered_flag
@@ -218,7 +208,7 @@ main
 	ld (var_road_left_addr),hl ; store initial road left pos at top left of screen
 
 	ld a, 136
-	ld b,23 ; for this debug version do half and alternate pattern to see scroll
+	ld b,22 ; for this debug version do half and alternate pattern to see scroll
 initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is beter name of what it's doing!!
 	
 	ld (hl),a    ;; road starts as two staight vertical lines 
@@ -277,7 +267,7 @@ carright
 noCarMove		
 	ld (var_car_pos), hl		
 	xor a  ;set carry flag to 0
-	ld de, 33 
+	ld de, 32 
 	sbc hl,de
 	ld a,(hl)
 	or a
