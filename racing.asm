@@ -23,12 +23,11 @@
 #define COL_IN_SCREEN 32
 #define ROAD_SCREEN_MEM_OFFSET 9    
 #define WIDTH_OF_ROAD 9
-#define CAR_SCREEN_MEM_START_OFFSET 772
+#define CAR_SCREEN_MEM_START_OFFSET 709
 #define ROADFROM_SCREEN_MEM_LOCATION 769
-#define ROADTO_SCREEN_MEM_LOCATION 778
 #define RANDOM_BYTES_MEM_LOCATION 2000
 ;((32*23)-1)
-#define SCREEN_SCROLL_MEM_OFFSET 735
+#define SCREEN_SCROLL_MEM_OFFSET 693
 
 
 ;D_FILE is location of screen memory (which moves depending on length of basic, but should be fixed after program is loaded
@@ -96,7 +95,9 @@ score_mem
 	DEFB 0,0	
 speedUpLevelCounter	
 	DEFB 0,0
-		
+initialCarLeftCountDown
+	DEFB 0,0
+	
 to_print .equ to_print_mem ;use hprint16
 
 ;; note on the zx81 display 
@@ -150,7 +151,7 @@ introWaitLoop_1
 
 
 intro_title
-	call CLS
+	call CLS	
 	ld bc,1
 	ld de,chequrered_flag
 	call printstring	
@@ -187,6 +188,9 @@ read_start_key
 
 main
 	call CLS
+	ld a, 7
+	ld (initialCarLeftCountDown),a
+	
 	ld hl, 0						; initialise score to zero
 	ld (score_mem),hl
 
@@ -204,7 +208,7 @@ main
 	ld de, SCREEN_SCROLL_MEM_OFFSET
 	add hl, de	
 	ld (var_scroll_road_from), hl
-	ld de, 32
+	ld de, 33
 	add hl, de
 	ld (var_scroll_road_to), hl
 
@@ -244,14 +248,22 @@ initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is bete
 
 principalloop
 	ld hl,(var_car_pos)							; get car position
-	
+
+	;ld a, (initialCarLeftCountDown)
+	;cp 0
+	;jp z, skipInitLeftDec
+	;dec a
+	;ld (initialCarLeftCountDown), a
+	;dec hl	
+;skipInitLeftDec	
 	;user input to move road left or right	
 	ld a, KEYBOARD_READ_PORT_SHIFT_TO_V			; read keyboard shift to v
 	in a, (KEYBOARD_READ_PORT)					; read from io port	
-	bit 1, a									; check bit set for key press left  (Z)
+	bit 1, a
+	; check bit set for key press left  (Z)
 	jr z, carleft								; jump to move car left
 	ld a, KEYBOARD_READ_PORT_SPACE_TO_B			; read keyboard space to B
-	in a, (KEYBOARD_READ_PORT)					; read from io port	
+	in a, (KEYBOARD_READ_PORT)					; read from io port		
 	bit 2, a									; check bit set for key press right (M)
 	jr z, carright								; jump to move car right
 	
@@ -264,8 +276,8 @@ carright
 	inc hl
 noCarMove		
 	ld (var_car_pos), hl		
-	ld de, 33 
 	xor a  ;set carry flag to 0
+	ld de, 33 
 	sbc hl,de
 	ld a,(hl)
 	or a
@@ -278,7 +290,7 @@ noCarMove
 	;scroll road	
 	ld hl,(var_scroll_road_from)  ; load left road address	
 	ld de,(var_scroll_road_to) ; load right road address		
-	ld bc,736					; 736 = 32columns * 23 rows
+	ld bc,694 ;736 = 32columns * 23 rows
 	; LDDR repeats the instruction LDD (Does a LD (DE),(HL) and decrements 
 	; each of DE, HL, and BC) until BC=0. Note that if BC=0 before 
 	; the start of the routine, it will try loop around until BC=0 again.	
