@@ -80,8 +80,10 @@ keys_screen_txt
 	DEFB	_S,__,_T,_O,__,_S,_T,_A,_R,_T,26,__,_Z,__,_L,_E,_F,_T,26,__,_M,__,_R,_I,_G,_H,_T,$ff
 intro_message
 	DEFB    _P,_I,_T,__,_C,_R,_E,_W,__,_S,_A,_Y,__,_C,_A,_R,__,_I,_S,__,_P,_E,_R,_F,_E,_C,_T,__,__,__,$ff				
+last_Score_txt
+	DEFB	21,21,21,21,_L,_A,_S,_T,__,__,_S,_C,_O,_R,_E,21,21,21,21,$ff	
 high_Score_txt
-	DEFB	_L,_A,_S,_T,__,__,_S,_C,_O,_R,_E,__,$ff	
+	DEFB	21,21,21,21,_H,_I,_G,_H,__,__,_S,_C,_O,_R,_E,21,21,21,21,$ff		
 chequrered_flag		
 	DEFB	6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,$ff		
 test_str		
@@ -96,12 +98,16 @@ high_score_mem_tens
 	DEFB 0
 high_score_mem_hund
 	DEFB 0		
+last_score_mem_tens
+	DEFB 0
+last_score_mem_hund
+	DEFB 0			
 speedUpLevelCounter	
 	DEFB 0,0
 initialCarLeftCountDown
 	DEFB 0,0
 	
-to_print .equ to_print_mem ;use hprint16
+to_print .equ to_print_mem ;use printByte16
 
 ;; note on the zx81 display 
 ; from previous crashes and experimenting with printing characters to the screen;; 
@@ -121,11 +127,10 @@ to_print .equ to_print_mem ;use hprint16
 ;; 760 = bottom row, first column
 ;; 791 = bottom row, last column
 	
-
-hprint 		;;http://swensont.epizy.com/ZX81Assembly.pdf?i=1
+;set b to row, c to col	
+printByte 		;;http://swensont.epizy.com/ZX81Assembly.pdf?i=1
 	PUSH AF ;store the original value of A for later
-	;ld b, 2 ;b is row, c is col
-	;ld c, 2
+	
 	CALL PRINTAT ;
 	POP AF 
 	PUSH AF ;store the original value of A for later
@@ -136,10 +141,6 @@ hprint 		;;http://swensont.epizy.com/ZX81Assembly.pdf?i=1
 	RRA
 	ADD A,$1C ; add 28 to the character code
 	CALL PRINT
-	;ld a, c
-	;add a, 1
-	;ld c, a
-	;CALL PRINTAT ;
 	POP AF ; retrieve original value of A
 	AND $0F ; isolate the second digit
 	ADD A,$1C ; add 28 to the character code
@@ -154,13 +155,16 @@ introWaitLoop_1
 	ld a,b
 	or c
 	jr nz, introWaitLoop_1
-	jr read_start_key
+	jp read_start_key
 	
 	
 setHighScoreZero
 	ld a, 0
 	ld (high_score_mem_tens), a
 	ld (high_score_mem_hund), a
+	ld (last_score_mem_tens), a
+	ld (last_score_mem_hund), a	
+	
 	
 intro_title
 	call CLS	
@@ -176,29 +180,42 @@ intro_title
 	ld bc,202
 	ld de,keys_screen_txt
 	call printstring	
-	ld bc,341
+	ld bc,337
 	ld de,high_Score_txt
 	call printstring	
+	ld b, 11			; b is row to print in
+	ld c, 13			; c is column
+    ld a, (high_score_mem_hund) ; load hundreds
+	call printByte    
+	ld b, 11			; b is row to print in
+	ld c, 15			; c is column
+	ld a, (high_score_mem_tens) ; load tens		
+	call printByte	
+	ld bc,436
+	ld de,last_Score_txt
+	call printstring	
+	ld b, 14			; b is row to print in
+	ld c, 13			; c is column
+    ld a, (last_score_mem_hund) ; load hundreds
+	call printByte    
+	ld b, 14			; b is row to print in
+	ld c, 15			; c is column
+	ld a, (last_score_mem_tens) ; load tens		
+	call printByte	
+
+	
 	ld bc,727
 	ld de,chequrered_flag
 	call printstring		
 	ld bc,760
 	ld de,chequrered_flag
 	call printstring	
-	ld b, 13			; b is row to print in
-	ld c, 13			; c is column
-    ld a, (score_mem_hund) ; load hundreds
-	call hprint    
-	ld b, 13			; b is row to print in
-	ld c, 15			; c is column
-	ld a, (score_mem_tens) ; load tens		
-	call hprint	
 
 read_start_key
 	ld a, KEYBOARD_READ_PORT_A_TO_G	
 	in a, (KEYBOARD_READ_PORT)					; read from io port	
 	bit 1, a									; check S key pressed
-	jr nz, introWaitLoop
+	jp nz, introWaitLoop
 
 main
 	call CLS
@@ -318,10 +335,7 @@ noCarMove
 	
 	and 1
 	jr z, roadleft	
-	
 	jr roadright
-	
-	jr printNewRoad 
 
 roadleft	
 	; erase old road
@@ -426,11 +440,11 @@ printScoreInGame
 	ld b, 21			; b is row to print in
 	ld c, 1			; c is column
     ld a, (score_mem_hund) ; load hundreds
-	call hprint    
+	call printByte    
 	ld b, 21			; b is row to print in
 	ld c, 3			; c is column
 	ld a, (score_mem_tens) ; load tens		
-	call hprint
+	call printByte
 
 	;;ld bc,$05ff 					;max waiting time
 	ld bc, (speedUpLevelCounter)
@@ -455,11 +469,18 @@ gameover
 	; copy the current score to high score, need to check it is higher!!
 	
 	ld a, (score_mem_tens) ; load tens		
-	ld (high_score_mem_tens),a 
+	ld (last_score_mem_tens),a 
 	ld a, (score_mem_hund) ; load tens		
-	ld (high_score_mem_hund),a	
+	ld (last_score_mem_hund),a	
 
 
+	; check if current score beats old
+	; >>>>>> todo
+	;ld a, (score_mem_tens) ; load tens		
+	;ld (high_score_mem_tens),a 
+	;ld a, (score_mem_hund) ; load tens		
+	;ld (high_score_mem_hund),a	
+	
 	ld hl, $ffff   ;; wait max time for 16bits then go back to intro	
 waitloop_end_game
 	dec bc
@@ -469,8 +490,6 @@ waitloop_end_game
 	jp intro_title
 	
 	;ret  ; never return to basic
-	
-	
 	
 ; original game written by Jon Kingsman, for zx spectrum, ZX81 port/rework by Adrian Pilkington 
 
