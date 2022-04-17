@@ -52,7 +52,7 @@
 ; starting port numbner for keyboard, is same as first port for shift to v
 #define KEYBOARD_READ_PORT $FE 
 
-	jp intro_title
+	jp setHighScoreZero
 
 var_car_pos 
 	DEFB 0,0
@@ -74,21 +74,28 @@ roadCharacterControl
 	DEFB 0	
 crash_message_txt
 	DEFB	_G,_A,_M,_E,__,_O,_V,_E,_R,$ff	
-score_txt
-	DEFB	_S,_C,_O,_R,_E,__,$ff
 title_screen_txt
 	DEFB	_Z,_X,_8,_1,__,_R,_A,_C,_I,_N,_G,__,__,__,__,__,__,$ff
 keys_screen_txt
 	DEFB	_S,__,_T,_O,__,_S,_T,_A,_R,_T,26,__,_Z,__,_L,_E,_F,_T,26,__,_M,__,_R,_I,_G,_H,_T,$ff
 intro_message
 	DEFB    _P,_I,_T,__,_C,_R,_E,_W,__,_S,_A,_Y,__,_C,_A,_R,__,_I,_S,__,_P,_E,_R,_F,_E,_C,_T,__,__,__,$ff				
-	
+high_Score_txt
+	DEFB	_L,_A,_S,_T,__,__,_S,_C,_O,_R,_E,__,$ff	
 chequrered_flag		
 	DEFB	6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,$ff		
 test_str		
 	DEFB	6,$ff			
-score_mem
-	DEFB 0,0	
+score_mem_tens
+	DEFB 0
+score_mem_hund
+	DEFB 0
+score_mem_thou
+	DEFB 0
+high_score_mem_tens
+	DEFB 0
+high_score_mem_hund
+	DEFB 0		
 speedUpLevelCounter	
 	DEFB 0,0
 initialCarLeftCountDown
@@ -115,26 +122,30 @@ to_print .equ to_print_mem ;use hprint16
 ;; 791 = bottom row, last column
 	
 
-hprint16  ; print one 2byte number stored in location $to_print
-	ld hl,$to_print
-	ld b,2	
-hprint16_loop	
-	ld a, (hl)
-	push af ;store the original value of a for later
-	and $f0 ; isolate the first digit
-	rra
-	rra
-	rra
-	rra
-	add a,$1c ; add 28 to the character code
-	call PRINT ;
-	pop af ; retrieve original value of a
-	and $0f ; isolate the second digit
-	add a,$1c ; add 28 to the character code
-	call PRINT
-	inc hl
-	djnz hprint16_loop
-	ret
+hprint 		;;http://swensont.epizy.com/ZX81Assembly.pdf?i=1
+	PUSH AF ;store the original value of A for later
+	;ld b, 2 ;b is row, c is col
+	;ld c, 2
+	CALL PRINTAT ;
+	POP AF 
+	PUSH AF ;store the original value of A for later
+	AND $F0 ; isolate the first digit
+	RRA
+	RRA
+	RRA
+	RRA
+	ADD A,$1C ; add 28 to the character code
+	CALL PRINT
+	;ld a, c
+	;add a, 1
+	;ld c, a
+	;CALL PRINTAT ;
+	POP AF ; retrieve original value of A
+	AND $0F ; isolate the second digit
+	ADD A,$1C ; add 28 to the character code
+	CALL PRINT
+	RET
+	
 
 introWaitLoop
 	ld bc,$00ff ;max waiting time
@@ -144,8 +155,13 @@ introWaitLoop_1
 	or c
 	jr nz, introWaitLoop_1
 	jr read_start_key
-
-
+	
+	
+setHighScoreZero
+	ld a, 0
+	ld (high_score_mem_tens), a
+	ld (high_score_mem_hund), a
+	
 intro_title
 	call CLS	
 	ld bc,1
@@ -160,8 +176,8 @@ intro_title
 	ld bc,202
 	ld de,keys_screen_txt
 	call printstring	
-	ld bc,331
-	ld de,intro_message
+	ld bc,341
+	ld de,high_Score_txt
 	call printstring	
 	ld bc,727
 	ld de,chequrered_flag
@@ -169,6 +185,14 @@ intro_title
 	ld bc,760
 	ld de,chequrered_flag
 	call printstring	
+	ld b, 13			; b is row to print in
+	ld c, 13			; c is column
+    ld a, (score_mem_hund) ; load hundreds
+	call hprint    
+	ld b, 13			; b is row to print in
+	ld c, 15			; c is column
+	ld a, (score_mem_tens) ; load tens		
+	call hprint	
 
 read_start_key
 	ld a, KEYBOARD_READ_PORT_A_TO_G	
@@ -181,8 +205,12 @@ main
 	ld a, 7
 	ld (initialCarLeftCountDown),a
 	
-	ld hl, 0						; initialise score to zero
-	ld (score_mem),hl
+	ld a, 0						; initialise score to zero
+	ld (score_mem_tens),a
+	ld a, 0						; initialise score to zero
+	ld (score_mem_hund),a
+	ld a, 0						; initialise score to zero
+	ld (score_mem_thou),a	
 
 	ld bc, $09ff					; set initial difficulty
 	ld (speedUpLevelCounter), bc
@@ -239,13 +267,6 @@ initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is bete
 principalloop
 	ld hl,(var_car_pos)							; get car position
 
-	;ld a, (initialCarLeftCountDown)
-	;cp 0
-	;jp z, skipInitLeftDec
-	;dec a
-	;ld (initialCarLeftCountDown), a
-	;dec hl	
-;skipInitLeftDec	
 	;user input to move road left or right	
 	ld a, KEYBOARD_READ_PORT_SHIFT_TO_V			; read keyboard shift to v
 	in a, (KEYBOARD_READ_PORT)					; read from io port	
@@ -385,10 +406,32 @@ printNewRoad
 	ld (roadCharacter), a
 	
 preWaitloop
-	ld hl,(score_mem)				; add one to score
-	inc hl
-	ld (score_mem),hl
-	
+	ld a,(score_mem_tens)				; add one to score
+	add a,1	
+	daa
+	ld (score_mem_tens),a	
+	cp 153
+	jr z, addOneToHund
+	jr skipAddHund
+addOneToHund
+	ld a, 0
+	ld (score_mem_tens), a
+    ld a, (score_mem_hund)
+	add a, 1
+	daa
+	ld (score_mem_hund), a
+skipAddHund	
+
+printScoreInGame
+	ld b, 21			; b is row to print in
+	ld c, 1			; c is column
+    ld a, (score_mem_hund) ; load hundreds
+	call hprint    
+	ld b, 21			; b is row to print in
+	ld c, 3			; c is column
+	ld a, (score_mem_tens) ; load tens		
+	call hprint
+
 	;;ld bc,$05ff 					;max waiting time
 	ld hl, (speedUpLevelCounter)   ; makes it more difficult as you progress
 	ld a, h
@@ -421,11 +464,13 @@ gameover
 	ld bc,10
 	ld de,crash_message_txt
 	call printstring
-	ld hl, score_mem	; copy from score memory location to "print buffer"
-	ld de, to_print		;
-	ld bc, 2			; 2 bytes
-	ldir				; copy 2 bytes from hl to de	
-	call hprint16 		; print 
+	; copy the current score to high score, need to check it is higher!!
+	
+	ld a, (score_mem_tens) ; load tens		
+	ld (high_score_mem_tens),a 
+	ld a, (score_mem_hund) ; load tens		
+	ld (high_score_mem_hund),a	
+
 
 	ld hl, $ffff   ;; wait max time for 16bits then go back to intro
 	ld (speedUpLevelCounter), hl
