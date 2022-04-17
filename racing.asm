@@ -212,7 +212,7 @@ main
 	ld a, 0						; initialise score to zero
 	ld (score_mem_thou),a	
 
-	ld bc, $09ff					; set initial difficulty
+	ld bc, $04ff					; set initial difficulty
 	ld (speedUpLevelCounter), bc
 	ld bc,0
 	
@@ -433,24 +433,12 @@ printScoreInGame
 	call hprint
 
 	;;ld bc,$05ff 					;max waiting time
+	ld bc, (speedUpLevelCounter)
 	ld hl, (speedUpLevelCounter)   ; makes it more difficult as you progress
 	ld a, h
-	cp $ff
-	jr z, waitloop_set_min
+	cp 0
+	jr z, waitloop
 	dec hl 
-	ld a, h
-	cp $ff
-	jr z, waitloop_set_min	
-	dec hl
-	ld a, h
-	cp $ff
-	jr z, waitloop_set_min	
-	dec hl
-	ld (speedUpLevelCounter), hl
-	ld bc, (speedUpLevelCounter)
-	jr waitloop
-waitloop_set_min
-	ld hl, $00ff
 	ld (speedUpLevelCounter), hl
 	ld bc, (speedUpLevelCounter)
 waitloop
@@ -472,9 +460,7 @@ gameover
 	ld (high_score_mem_hund),a	
 
 
-	ld hl, $ffff   ;; wait max time for 16bits then go back to intro
-	ld (speedUpLevelCounter), hl
-	ld bc, (speedUpLevelCounter)
+	ld hl, $ffff   ;; wait max time for 16bits then go back to intro	
 waitloop_end_game
 	dec bc
 	ld a,b
