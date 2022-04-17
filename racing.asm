@@ -264,7 +264,7 @@ carright
 	inc hl
 noCarMove		
 	ld (var_car_pos), hl		
-	ld de, 32 
+	ld de, 33 
 	xor a  ;set carry flag to 0
 	sbc hl,de
 	ld a,(hl)
