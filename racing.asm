@@ -1,5 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;
 ;;; port of a racing game from zx spectrum code by Jon Kingsman 
+;;; https://worldofspectrum.org/forums/discussion/27207/redirect/p1
 ;;; reworked for zx81 by Adrian Pilkington, and added title screen etc
 ;;; which didn't appear to work on the zx81
 ;;;;;;;;;;;;;;;;;;;;;
@@ -34,7 +35,7 @@
 ; probably should run some code to detect if this is 1K or 16K as well, or just have 2 verisons 1K and 16K
 #define D_FILE 16396
 ;black block
-#define CAR_CHARACTER_CODE 138  
+#define CAR_CHARACTER_CODE 128  
 ;blank space
 #define NOT_CAR_CHARACTER_CODE 0
 ;blank space
@@ -78,8 +79,6 @@ title_screen_txt
 	DEFB	_Z,_X,_8,_1,__,_R,_A,_C,_I,_N,_G,__,__,__,__,__,__,$ff
 keys_screen_txt
 	DEFB	_S,__,_T,_O,__,_S,_T,_A,_R,_T,26,__,_Z,__,_L,_E,_F,_T,26,__,_M,__,_R,_I,_G,_H,_T,$ff
-intro_message
-	DEFB    _P,_I,_T,__,_C,_R,_E,_W,__,_S,_A,_Y,__,_C,_A,_R,__,_I,_S,__,_P,_E,_R,_F,_E,_C,_T,__,__,__,$ff				
 last_Score_txt
 	DEFB	21,21,21,21,_L,_A,_S,_T,__,__,_S,_C,_O,_R,_E,21,21,21,21,$ff	
 high_Score_txt
@@ -106,6 +105,10 @@ speedUpLevelCounter
 	DEFB 0,0
 initialCarLeftCountDown
 	DEFB 0,0
+credits_and_version_1	
+	DEFB _Z,_X,__,_S,_P,_E,_C,_T,_R,_U,_M,__,_C,_O,_D,_E,__,_B,_Y,__,_J,__,_K,_I,_N,_G,_S,_M,_A,_N,$ff
+credits_and_version_2
+	DEFB _P,_O,_R,_T,_E,_D,__,_T,_O,__,_Z,_X,36,29,__,_B,_Y,__,_A,__,_P,_I,_L,_K,_I,_N,_G,_T,_O,_N,$ff
 	
 to_print .equ to_print_mem ;use printByte16
 
@@ -146,7 +149,6 @@ printByte 		;;http://swensont.epizy.com/ZX81Assembly.pdf?i=1
 	ADD A,$1C ; add 28 to the character code
 	CALL PRINT
 	RET
-	
 
 introWaitLoop
 	ld bc,$00ff ;max waiting time
@@ -180,17 +182,17 @@ intro_title
 	ld bc,202
 	ld de,keys_screen_txt
 	call printstring	
-	ld bc,337
-	ld de,high_Score_txt
-	call printstring	
-	ld b, 11			; b is row to print in
-	ld c, 13			; c is column
-    ld a, (high_score_mem_hund) ; load hundreds
-	call printByte    
-	ld b, 11			; b is row to print in
-	ld c, 15			; c is column
-	ld a, (high_score_mem_tens) ; load tens		
-	call printByte	
+	;ld bc,337
+	;ld de,high_Score_txt
+	;call printstring	
+	;ld b, 11			; b is row to print in
+	;ld c, 13			; c is column
+    ;ld a, (high_score_mem_hund) ; load hundreds
+	;call printByte    
+	;ld b, 11			; b is row to print in
+	;ld c, 15			; c is column
+	;ld a, (high_score_mem_tens) ; load tens		
+	;call printByte	
 	ld bc,436
 	ld de,last_Score_txt
 	call printstring	
@@ -203,6 +205,12 @@ intro_title
 	ld a, (last_score_mem_tens) ; load tens		
 	call printByte	
 
+	ld bc,530	
+	ld de,credits_and_version_1
+	call printstring		
+	ld bc,563	
+	ld de,credits_and_version_2
+	call printstring		
 	
 	ld bc,727
 	ld de,chequrered_flag
@@ -229,7 +237,7 @@ main
 	ld a, 0						; initialise score to zero
 	ld (score_mem_thou),a	
 
-	ld bc, $04ff					; set initial difficulty
+	ld bc, $03ff					; set initial difficulty
 	ld (speedUpLevelCounter), bc
 	ld bc,0
 	
@@ -252,19 +260,19 @@ main
 	add hl, de	
 	ld (var_road_left_addr),hl ; store initial road left pos at top left of screen
 
-	ld a, 136
-	ld b,22 ; for this debug version do half and alternate pattern to see scroll
-initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is beter name of what it's doing!!
+	ld a, 136	; initial road character, grey block at start
+	ld b, 22    ; number of rows to initialise 
+initialiseRoad  ; was fillscreen in zx spectrum version, initialiseRoad is beter name of what it's doing!!
 	
-	ld (hl),a    ;; road starts as two staight vertical lines 
-	inc hl   	 ;; make each edge of road 2 characters wide
+	ld (hl),a    			; road starts as two staight vertical lines 
+	inc hl   	 			; make each edge of road 2 characters wide
 	ld (hl),a   	
 	ld de,WIDTH_OF_ROAD   
-	add hl,de			  ;; add offset to get to other side of road	
-	ld (hl),a				;; make each edge of road 2 characters wide
+	add hl,de			  	;add offset to get to other side of road	
+	ld (hl),a				; make each edge of road 2 characters wide
 	inc hl					
 	ld (hl),a
-	ld de,22  ;; on zx spectrum had ld de,21, but end of line on zx81 has chr$128 needs skip
+	ld de,22  				; on zx spectrum had ld de,21, but end of line on zx81 has chr$128 needs skip
 	add hl,de
 	djnz initialiseRoad	
 	
@@ -273,7 +281,7 @@ initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is bete
 	ld a, 2
 	ld (roadCharacterControl), a
 
-;initialise car	
+	;;;;;;;;;;;;;;;initialise car	
 	ld hl,(D_FILE) 
 	ld de, CAR_SCREEN_MEM_START_OFFSET
 	add hl, de	
@@ -282,24 +290,21 @@ initialiseRoad  ;; was fillscreen in zx spectrum version, initialiseRoad is bete
 	ld (var_car_pos),hl ;save car posn
 
 principalloop
-	ld hl,(var_car_pos)							; get car position
-
+	ld hl, (var_car_pos)						; load car position into hl
 	;user input to move road left or right	
 	ld a, KEYBOARD_READ_PORT_SHIFT_TO_V			; read keyboard shift to v
 	in a, (KEYBOARD_READ_PORT)					; read from io port	
 	bit 1, a
 	; check bit set for key press left  (Z)
-	jr z, carleft								; jump to move car left
+	jp z, carleft								; jump to move car left
 	ld a, KEYBOARD_READ_PORT_SPACE_TO_B			; read keyboard space to B
 	in a, (KEYBOARD_READ_PORT)					; read from io port		
 	bit 2, a									; check bit set for key press right (M)
-	jr z, carright								; jump to move car right
-	
-	jr noCarMove								; dropped through to no move
-	
+	jr z, carright								; jump to move car right	
+	jp noCarMove								; dropped through to no move
 carleft
 	dec hl	
-	jr noCarMove	
+	jp noCarMove	
 carright
 	inc hl
 noCarMove		
@@ -325,17 +330,18 @@ noCarMove
 	lddr
 	
 	; random number gen from https://spectrumcomputing.co.uk/forums/viewtopic.php?t=4571
-    add hl,hl    
+	ld hl, (score_mem_tens)
+    add hl,hl    	
+	dec hl
     sbc a,a      
-    and %00101101 
+    and %10101001 
     xor l         
     ld l,a       
     ld a,r       
-    add a,h     
-	
+    add a,h     	
 	and 1
-	jr z, roadleft	
-	jr roadright
+	jp z, roadleft	
+	jp roadright
 
 roadleft	
 	; erase old road
@@ -350,7 +356,7 @@ roadleft
 	inc hl
 	ld (hl),a
 	
-; move road position to left
+	; move road position to left
 	ld hl,(var_road_left_addr)
 	dec hl
 	ld (var_road_left_addr), hl	
@@ -363,8 +369,7 @@ roadleft
 	ld (road_offset_from_edge),a
 	inc hl
 	ld (var_road_left_addr), hl
-
-	jr printNewRoad
+	jp printNewRoad
 	
 roadright
 	; erase old road
@@ -387,7 +392,6 @@ roadright
 	ld (road_offset_from_edge),a
 	cp 21
 	jp nz, printNewRoad   ; skip inc if it's not at edge otherwise inc 
-
 	dec a
 	ld (road_offset_from_edge),a
 	dec hl
@@ -406,7 +410,7 @@ printNewRoad
 	inc hl
 	ld (hl),a
 
-	;toggle road character to show if scrolling is working
+	;toggle road character to show give more impression of movement
 	xor a  
 	ld a,(roadCharacterControl)
 	dec a
@@ -420,9 +424,9 @@ printNewRoad
 	ld (roadCharacter), a
 	
 preWaitloop
-	ld a,(score_mem_tens)				; add one to score
+	ld a,(score_mem_tens)				; add one to score, scoring is binary coded decimal (BCD)
 	add a,1	
-	daa
+	daa									; z80 daa instruction realigns for BCD after add or subtract
 	ld (score_mem_tens),a	
 	cp 153
 	jr z, addOneToHund
@@ -446,7 +450,6 @@ printScoreInGame
 	ld a, (score_mem_tens) ; load tens		
 	call printByte
 
-	;;ld bc,$05ff 					;max waiting time
 	ld bc, (speedUpLevelCounter)
 	ld hl, (speedUpLevelCounter)   ; makes it more difficult as you progress
 	ld a, h
@@ -454,6 +457,7 @@ printScoreInGame
 	jr z, waitloop
 	dec hl 
 	ld (speedUpLevelCounter), hl
+
 	ld bc, (speedUpLevelCounter)
 waitloop
 	dec bc
@@ -474,19 +478,13 @@ gameover
 	ld (last_score_mem_hund),a	
 
 
-	; check if current score beats old
-	; >>>>>> todo
-	;ld a, (score_mem_tens) ; load tens		
-	;ld (high_score_mem_tens),a 
-	;ld a, (score_mem_hund) ; load tens		
-	;ld (high_score_mem_hund),a	
-	
-	ld hl, $ffff   ;; wait max time for 16bits then go back to intro	
+
+	ld bc, $ffff   ;; wait max time for 16bits then go back to intro	
 waitloop_end_game
 	dec bc
 	ld a,b
 	or c
-	jr nz, waitloop_end_game
+	jp nz, waitloop_end_game
 	jp intro_title
 	
 	;ret  ; never return to basic
