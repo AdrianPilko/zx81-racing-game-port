@@ -111,7 +111,8 @@ credits_and_version_1
 	DEFB _Z,_X,__,_S,_P,_E,_C,_T,_R,_U,_M,__,_C,_O,_D,_E,__,_B,_Y,__,_J,__,_K,_I,_N,_G,_S,_M,_A,_N,$ff
 credits_and_version_2
 	DEFB _P,_O,_R,_T,_E,_D,__,_T,_O,__,_Z,_X,36,29,__,_B,_Y,__,_A,__,_P,_I,_L,_K,_I,_N,_G,_T,_O,_N,$ff
-	
+var_keys_or_joystick
+	DEFB 0	
 to_print .equ to_print_mem ;use printByte16
 
 ;; note on the zx81 display 
@@ -224,23 +225,36 @@ intro_title
 	ld bc,760
 	ld de,chequrered_flag
 	call printstring	
+    ld c, $1f
+    ld a, 0
+    out (c),a
 
 read_start_key
+    ; read fire button to start , works on real zx81 but not on EightyOne emulator
+    ; comment out for version on github until work out a way of stopping EightyOne
+    ; always returning bit set
+    and a
+    ld (var_keys_or_joystick), a
+    ;ld b, 00010000b   ; 16 decimal, fire button
+    ;in a,($1F)       ; a now has the input byte from the port 1f (which is the joystick port)
+    ;and b 
+    ;jp nz, main
+    
 	ld a, KEYBOARD_READ_PORT_A_TO_G	
 	in a, (KEYBOARD_READ_PORT)					; read from io port	
 	bit 1, a									; check S key pressed
-	jp nz, introWaitLoop
-
+    jp nz, introWaitLoop
+    ; this means that they pressed  s to start so only use keys
+    ld a, 1
+    ld (var_keys_or_joystick), a   ; keys = 1
 main
 	call CLS
 	ld a, 7
 	ld (initialCarLeftCountDown),a
 	
-	ld a, 0						; initialise score to zero
-	ld (score_mem_tens),a
-	ld a, 0						; initialise score to zero
+	and a						; initialise score to zero, and 0 results in a equal to zero
+	ld (score_mem_tens),a	
 	ld (score_mem_hund),a
-	ld a, 0						; initialise score to zero
 	ld (score_mem_thou),a	
 
 	ld bc, $03ff					; set initial difficulty
@@ -308,14 +322,25 @@ principalloop
 ; here we only need left and right, and also we don't need most of the assembler code "ld c,a" onwards as this just setup the return result into bc
 ; we just need in a,(1f) and the decode for left right so should be super fast
 
-    ; this works if the joystick is plugged in, and if not then the keys still work, ace :)
-    in a,(1f)       ; a now has the input byte from the port 1f (which is the joystick port)
-    bit 2, a 
-    jp z, carright
-    bit 1, a 
-    jp z, carleft   
 
 	ld hl, (var_car_pos)						; load car position into hl
+
+    ld a, (var_keys_or_joystick)    ; keys = 1
+    and 1
+    jp nz, use_keys_only
+    
+    ; this works if the joystick is plugged in, and if not then the keys still work, ace :)
+    ld b, 00000001b   ; 1 , joystick right
+    in a,($1F)       ; a now has the input byte from the port 1f (which is the joystick port)
+    ld c, a
+    and b 
+    jp nz, carright
+    ld a, c
+    ld b, 00000010b   ; 2 decimal, joystick left
+    and b
+    jp nz, carleft   
+    
+use_keys_only
 	;user input to move road left or right	
 	ld a, KEYBOARD_READ_PORT_SHIFT_TO_V			; read keyboard shift to v
 	in a, (KEYBOARD_READ_PORT)					; read from io port	
