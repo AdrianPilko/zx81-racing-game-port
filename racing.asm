@@ -80,9 +80,11 @@ title_screen_txt
 keys_screen_txt
 	DEFB	_S,__,_T,_O,__,_S,_T,_A,_R,_T,26,__,_Z,__,_L,_E,_F,_T,26,__,_M,__,_R,_I,_G,_H,_T,$ff
 keys_screen_txt_2
-	DEFB	$10,_O,_R,__,_J,_O,_Y,_S,_T,_I,_C,_K,__,_P,_R,_E,_S,_S,__,_J,__,_T,_H,_E,_N,__,_F,_I,_R,_E,$11,$ff    
+	DEFB	$10,_O,_R,__,_J,_O,_Y,_S,_T,_I,_C,_K,__,_P,_R,_E,_S,_S,__,_F,_I,_R,_E,$11,$ff    
 using_joystick_string
 	DEFB	$10,_J,_O,_Y,_S,_T,_I,_C,_K,__,_S,_E,_T,$11,$ff        
+not_using_joystick_string
+	DEFB	__,__,__,__,__,__,__,__,__,__,__,__,__,__,$ff        
 last_Score_txt
 	DEFB	21,21,21,21,_L,_A,_S,_T,__,__,_S,_C,_O,_R,_E,21,21,21,21,$ff	
 high_Score_txt
@@ -166,7 +168,7 @@ introWaitLoop_1
 	
 	
 setHighScoreZero
-	ld a, 0
+	xor a
 	ld (high_score_mem_tens), a
 	ld (high_score_mem_hund), a
 	ld (last_score_mem_tens), a
@@ -188,7 +190,7 @@ intro_title
 	ld de,keys_screen_txt
 	call printstring	
     
-    ld bc,233
+    ld bc,236
 	ld de,keys_screen_txt_2
     call printstring
 	;ld bc,337
@@ -228,7 +230,7 @@ intro_title
 	ld de,chequrered_flag
 	call printstring	
     ld c, $1f
-    ld a, 0
+    xor a
     out (c),a
     ld a, 1 
     ld (var_keys_or_joystick), a    
@@ -242,7 +244,7 @@ read_start_key
 	bit 3, a									; check  key pressed
     jp nz, carryOnCheckingStart
     
-    and a
+    xor a
     ld (var_keys_or_joystick), a    ; zero the flag for using joystick, so use keys
     ld bc,298
 	ld de,using_joystick_string
@@ -260,7 +262,10 @@ carryOnCheckingStart
     jp nz, main
     
 dont_check_fire_button    
-
+    ld bc,298
+	ld de,not_using_joystick_string
+    call printstring    
+    
 	ld a, KEYBOARD_READ_PORT_A_TO_G	
 	in a, (KEYBOARD_READ_PORT)					; read from io port	
 	bit 1, a									; check S key pressed
@@ -273,7 +278,7 @@ main
 	ld a, 7
 	ld (initialCarLeftCountDown),a
 	
-	and a						; initialise score to zero, and 0 results in a equal to zero
+	xor a 						; initialise score to zero, and 0 results in a equal to zero
 	ld (score_mem_tens),a	
 	ld (score_mem_hund),a
 	ld (score_mem_thou),a	
