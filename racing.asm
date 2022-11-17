@@ -79,6 +79,8 @@ title_screen_txt
 	DEFB	_Z,_X,_8,_1,__,_R,_A,_C,_I,_N,_G,__,__,__,__,__,__,$ff
 keys_screen_txt
 	DEFB	_S,__,_T,_O,__,_S,_T,_A,_R,_T,26,__,_Z,__,_L,_E,_F,_T,26,__,_M,__,_R,_I,_G,_H,_T,$ff
+keys_screen_txt_2
+	DEFB	__,$10,_O,_R,__,_J,_O,_Y,_S,_T,_I,_C,_K,$11,$ff    
 last_Score_txt
 	DEFB	21,21,21,21,_L,_A,_S,_T,__,__,_S,_C,_O,_R,_E,21,21,21,21,$ff	
 high_Score_txt
@@ -116,7 +118,7 @@ to_print .equ to_print_mem ;use printByte16
 ; from previous crashes and experimenting with printing characters to the screen;; 
 ; and also some forums, it's clear that the zx81 has 32 column* 24 rows of printable/addressable
 ; screen area, but at the end of each row is is a chr$127, which if overritten
-;; can cazuse unpredictable behavoir and system instabiltiy . It also menas calculating 
+;; can cause unpredictable behavoir and system instabiltiy . It also menas calculating 
 ;; addresses/offsets to print to is not as straightforward as say c64
 ;; printing to very last column and row, is 32col * 24row + (24"end of lines" - 1)
 ;; printing to [row][col], use (row * 33) + col, 
@@ -182,6 +184,10 @@ intro_title
 	ld bc,202
 	ld de,keys_screen_txt
 	call printstring	
+    
+    ld bc,246
+	ld de,keys_screen_txt_2
+    call printstring
 	;ld bc,337
 	;ld de,high_Score_txt
 	;call printstring	
@@ -290,6 +296,25 @@ initialiseRoad  ; was fillscreen in zx spectrum version, initialiseRoad is beter
 	ld (var_car_pos),hl ;save car posn
 
 principalloop
+
+
+; adding code to optionally use joystick interface, 
+; some code from https://sinclairzxworld.com/viewtopic.php?t=3265, made into youtube video https://www.youtube.com/watch?v=9MAbO6oDE_0&t=77s (by ByteForever)
+; IN A,(1F)
+; LD C,A
+; LD B,0
+; RET
+; This was done inline REM basic at line 1, then calls with USR 16514, and decodes the result using 1=right, 2= right, 4=up, 8=down, 16=fire
+; here we only need left and right, and also we don't need most of the assembler code "ld c,a" onwards as this just setup the return result into bc
+; we just need in a,(1f) and the decode for left right so should be super fast
+
+    ; this works if the joystick is plugged in, and if not then the keys still work, ace :)
+    in a,(1f)       ; a now has the input byte from the port 1f (which is the joystick port)
+    bit 2, a 
+    jp z, carright
+    bit 1, a 
+    jp z, carleft   
+
 	ld hl, (var_car_pos)						; load car position into hl
 	;user input to move road left or right	
 	ld a, KEYBOARD_READ_PORT_SHIFT_TO_V			; read keyboard shift to v
