@@ -80,7 +80,9 @@ title_screen_txt
 keys_screen_txt
 	DEFB	_S,__,_T,_O,__,_S,_T,_A,_R,_T,26,__,_Z,__,_L,_E,_F,_T,26,__,_M,__,_R,_I,_G,_H,_T,$ff
 keys_screen_txt_2
-	DEFB	__,$10,_O,_R,__,_J,_O,_Y,_S,_T,_I,_C,_K,$11,$ff    
+	DEFB	$10,_O,_R,__,_J,_O,_Y,_S,_T,_I,_C,_K,__,_P,_R,_E,_S,_S,__,_J,__,_T,_H,_E,_N,__,_F,_I,_R,_E,$11,$ff    
+using_joystick_string
+	DEFB	$10,_J,_O,_Y,_S,_T,_I,_C,_K,__,_S,_E,_T,$11,$ff        
 last_Score_txt
 	DEFB	21,21,21,21,_L,_A,_S,_T,__,__,_S,_C,_O,_R,_E,21,21,21,21,$ff	
 high_Score_txt
@@ -186,7 +188,7 @@ intro_title
 	ld de,keys_screen_txt
 	call printstring	
     
-    ld bc,246
+    ld bc,233
 	ld de,keys_screen_txt_2
     call printstring
 	;ld bc,337
@@ -228,18 +230,37 @@ intro_title
     ld c, $1f
     ld a, 0
     out (c),a
+    ld a, 1 
+    ld (var_keys_or_joystick), a    
 
 read_start_key
     ; read fire button to start , works on real zx81 but not on EightyOne emulator
     ; comment out for version on github until work out a way of stopping EightyOne
     ; always returning bit set
-    and a
-    ld (var_keys_or_joystick), a
-    ;ld b, 00010000b   ; 16 decimal, fire button
-    ;in a,($1F)       ; a now has the input byte from the port 1f (which is the joystick port)
-    ;and b 
-    ;jp nz, main
+	ld a, KEYBOARD_READ_PORT_A_TO_G	
+	in a, (KEYBOARD_READ_PORT)					; read from io port	
+	bit 3, a									; check  key pressed
+    jp nz, carryOnCheckingStart
     
+    and a
+    ld (var_keys_or_joystick), a    ; zero the flag for using joystick, so use keys
+    ld bc,298
+	ld de,using_joystick_string
+    call printstring    
+    
+    
+carryOnCheckingStart 
+    ld a, (var_keys_or_joystick)    ; keys = 1
+    and 1
+    jp nz, dont_check_fire_button
+    
+    ld b, 00010000b   ; 16 decimal, fire button
+    in a,($1F)       ; a now has the input byte from the port 1f (which is the joystick port)
+    and b 
+    jp nz, main
+    
+dont_check_fire_button    
+
 	ld a, KEYBOARD_READ_PORT_A_TO_G	
 	in a, (KEYBOARD_READ_PORT)					; read from io port	
 	bit 1, a									; check S key pressed
