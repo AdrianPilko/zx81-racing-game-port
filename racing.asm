@@ -50,6 +50,7 @@
 ; keyboard space to b
 #define KEYBOARD_READ_PORT_SPACE_TO_B $7F 
 #define KEYBOARD_READ_PORT_A_TO_G	$FD
+#define KEYBOARD_READ_PORT_ENTER_TO_H $BF 
 ; starting port numbner for keyboard, is same as first port for shift to v
 #define KEYBOARD_READ_PORT $FE 
 
@@ -80,7 +81,7 @@ title_screen_txt
 keys_screen_txt
 	DEFB	_S,__,_T,_O,__,_S,_T,_A,_R,_T,26,__,_Z,__,_L,_E,_F,_T,26,__,_M,__,_R,_I,_G,_H,_T,$ff
 keys_screen_txt_2
-	DEFB	$10,_O,_R,__,_J,_O,_Y,_S,_T,_I,_C,_K,__,_P,_R,_E,_S,_S,__,_F,_I,_R,_E,$11,$ff    
+	DEFB	$10,_O,_R,__,_J,_O,_Y,_S,_T,_I,_C,_K,__,_P,_R,_E,_S,_S,__,_J,__,_F,_I,_R,_E,$11,$ff    
 using_joystick_string
 	DEFB	$10,_J,_O,_Y,_S,_T,_I,_C,_K,__,_S,_E,_T,$11,$ff        
 not_using_joystick_string
@@ -190,7 +191,7 @@ intro_title
 	ld de,keys_screen_txt
 	call printstring	
     
-    ld bc,236
+    ld bc,235
 	ld de,keys_screen_txt_2
     call printstring
 	;ld bc,337
@@ -239,7 +240,7 @@ read_start_key
     ; read fire button to start , works on real zx81 but not on EightyOne emulator
     ; comment out for version on github until work out a way of stopping EightyOne
     ; always returning bit set
-	ld a, KEYBOARD_READ_PORT_A_TO_G	
+	ld a, KEYBOARD_READ_PORT_ENTER_TO_H	
 	in a, (KEYBOARD_READ_PORT)					; read from io port	
 	bit 3, a									; check  key pressed
     jp nz, carryOnCheckingStart
@@ -262,10 +263,7 @@ carryOnCheckingStart
     jp nz, main
     
 dont_check_fire_button    
-    ld bc,298
-	ld de,not_using_joystick_string
-    call printstring    
-    
+   
 	ld a, KEYBOARD_READ_PORT_A_TO_G	
 	in a, (KEYBOARD_READ_PORT)					; read from io port	
 	bit 1, a									; check S key pressed
